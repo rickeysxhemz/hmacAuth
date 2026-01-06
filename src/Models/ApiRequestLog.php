@@ -1,0 +1,126 @@
+<?php
+
+declare(strict_types=1);
+
+namespace HmacAuth\Models;
+
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @method static Builder<static> failed()
+ * @method static Builder<static> successful()
+ * @method static Builder<static> forCompany(int $companyId)
+ * @method static Builder<static> forClient(string $clientId)
+ * @method static Builder<static> dateRange(CarbonInterface $from, CarbonInterface $to)
+ * @method static Builder<static> recent(int $minutes)
+ * @method static Builder<static> fromIp(string $ipAddress)
+ *
+ * @mixin Builder<ApiRequestLog>
+ */
+class ApiRequestLog extends Model
+{
+    public $timestamps = false;
+
+    protected $fillable = [
+        'api_credential_id',
+        'company_id',
+        'client_id',
+        'request_method',
+        'request_path',
+        'ip_address',
+        'user_agent',
+        'signature_valid',
+        'response_status',
+    ];
+
+    protected $casts = [
+        'signature_valid' => 'boolean',
+        'response_status' => 'integer',
+        'created_at' => 'datetime',
+    ];
+
+    protected $hidden = [
+        'company_id',
+    ];
+
+    /**
+     * Scope: Get failed authentication attempts
+     */
+    protected function scopeFailed(Builder $query): void
+    {
+        $query->where('signature_valid', false);
+    }
+
+    /**
+     * Scope: Get successful authentication attempts
+     */
+    protected function scopeSuccessful(Builder $query): void
+    {
+        $query->where('signature_valid', true);
+    }
+
+    /**
+     * Scope: Filter by company
+     */
+    protected function scopeForCompany(Builder $query, int $companyId): void
+    {
+        $query->where('company_id', $companyId);
+    }
+
+    /**
+     * Scope: Filter by client
+     */
+    protected function scopeForClient(Builder $query, string $clientId): void
+    {
+        $query->where('client_id', $clientId);
+    }
+
+    /**
+     * Scope: Filter by date range
+     */
+    protected function scopeDateRange(Builder $query, CarbonInterface $from, CarbonInterface $to): void
+    {
+        $query->whereBetween('created_at', [$from, $to]);
+    }
+
+    /**
+     * Scope: Filter records from last N minutes
+     */
+    protected function scopeRecent(Builder $query, int $minutes): void
+    {
+        $query->where('created_at', '>=', now()->subMinutes($minutes));
+    }
+
+    /**
+     * Scope: Filter by IP address
+     */
+    protected function scopeFromIp(Builder $query, string $ipAddress): void
+    {
+        $query->where('ip_address', $ipAddress);
+    }
+
+    /**
+     * Get the company model class from config.
+     */
+    protected function getCompanyModelClass(): string
+    {
+        /** @var string */
+        return config('hmac.models.company', 'App\\Models\\Company');
+    }
+
+    /**
+     * Relationships
+     */
+    public function apiCredential(): BelongsTo
+    {
+        return $this->belongsTo(ApiCredential::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo($this->getCompanyModelClass());
+    }
+}
