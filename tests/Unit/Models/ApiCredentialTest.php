@@ -283,13 +283,26 @@ describe('ApiCredential', function () {
             expect($array)->not->toHaveKey('old_client_secret');
         });
 
-        it('hides company_id in array', function () {
+    });
+
+    describe('hidden attributes (tenancy mode)', function () {
+        beforeEach(function () {
+            config(['hmac.tenancy.enabled' => true]);
+            config(['hmac.tenancy.column' => 'tenant_id']);
+        });
+
+        afterEach(function () {
+            config(['hmac.tenancy.enabled' => false]);
+        });
+
+        it('hides tenant_id in array when tenancy enabled', function () {
             $credential = new ApiCredential;
-            $credential->company_id = 123;
+            $credential->tenant_id = 123;
+            $credential->client_id = 'test-client';
 
             $array = $credential->toArray();
 
-            expect($array)->not->toHaveKey('company_id');
+            expect($array)->not->toHaveKey('tenant_id');
         });
     });
 });

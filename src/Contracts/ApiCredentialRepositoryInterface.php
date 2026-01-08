@@ -29,18 +29,24 @@ interface ApiCredentialRepositoryInterface
     public function invalidateCache(string $clientId): bool;
 
     /**
-     * Get all credentials for a company.
+     * Get all credentials for a tenant.
+     * Only available when tenancy is enabled.
      *
      * @return Collection<int, ApiCredential>
+     *
+     * @throws \RuntimeException When tenancy is not enabled
      */
-    public function getByCompany(int $companyId): Collection;
+    public function getByTenant(int|string $tenantId): Collection;
 
     /**
-     * Get active credentials for a company.
+     * Get active credentials for a tenant.
+     * Only available when tenancy is enabled.
      *
      * @return Collection<int, ApiCredential>
+     *
+     * @throws \RuntimeException When tenancy is not enabled
      */
-    public function getActiveByCompany(int $companyId): Collection;
+    public function getActiveByTenant(int|string $tenantId): Collection;
 
     /**
      * Create new credential.
@@ -96,9 +102,12 @@ interface ApiCredentialRepositoryInterface
     public function getExpiringSoon(int $days = 7): Collection;
 
     /**
-     * Count active credentials for company.
+     * Count active credentials for tenant.
+     * Only available when tenancy is enabled.
+     *
+     * @throws \RuntimeException When tenancy is not enabled
      */
-    public function countActiveByCompany(int $companyId): int;
+    public function countActiveByTenant(int|string $tenantId): int;
 
     /**
      * Get all credentials with pagination.

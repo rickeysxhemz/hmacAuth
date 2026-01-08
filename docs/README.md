@@ -35,30 +35,44 @@ Welcome to the Laravel HMAC Auth documentation. This package provides secure HMA
 ### 1. Install the package
 
 ```bash
-composer require your-vendor/laravel-hmac-auth
+composer require hmacauth/laravel-hmac-auth
 ```
 
-### 2. Publish configuration and run migrations
+### 2. Run the install command
 
 ```bash
+# Standalone mode (default)
 php artisan hmac:install
+
+# Or with multi-tenancy support
+php artisan hmac:install --with-tenancy --tenant-column=tenant_id
 ```
 
-### 3. Generate API credentials
+### 3. Run migrations
 
 ```bash
-php artisan hmac:generate --company=1 --environment=production
+php artisan migrate
 ```
 
-### 4. Protect your routes
+### 4. Generate API credentials
+
+```bash
+# Standalone mode
+php artisan hmac:generate --environment=production
+
+# With tenancy enabled
+php artisan hmac:generate --tenant=1 --environment=production
+```
+
+### 5. Protect your routes
 
 ```php
-Route::middleware('hmac.auth')->group(function () {
+Route::middleware('hmac.verify')->group(function () {
     Route::get('/api/protected', [ApiController::class, 'index']);
 });
 ```
 
-### 5. Implement client-side signing
+### 6. Implement client-side signing
 
 See [Client Implementation](client-implementation.md) for examples in PHP, JavaScript, Python, and cURL.
 
@@ -72,7 +86,7 @@ See [Client Implementation](client-implementation.md) for examples in PHP, JavaS
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        HmacAuthMiddleware                           │
+│                      VerifyHmacSignature Middleware                  │
 │  - Extracts headers from request                                     │
 │  - Delegates to HmacVerificationService                             │
 └─────────────────────────────────────────────────────────────────────┘
@@ -102,14 +116,36 @@ See [Client Implementation](client-implementation.md) for examples in PHP, JavaS
                     Store nonce       Log failure
                     Mark used         Record rate limit
                     Log success       Dispatch event
-                    Reset limits      Return 401/403
+                    Reset limits      Return 401/429
                     Dispatch event
+                    Set tenant_id*
                     Continue request
+
+* tenant_id is set on request attributes when tenancy is enabled
 ```
+
+## Standalone vs Multi-Tenant Mode
+
+The package supports two operational modes:
+
+### Standalone Mode (Default)
+
+- No tenant scoping required
+- Credentials work globally
+- Simpler setup for single-tenant applications
+
+### Multi-Tenant Mode
+
+- Credentials scoped to tenants
+- Configurable tenant column name
+- Enable with `--with-tenancy` flag during install
+- Or add later with `php artisan hmac:setup-tenancy`
+
+See [Configuration](configuration.md) for detailed tenancy setup.
 
 ## Support
 
 - **Documentation Issues**: Open an issue with the `documentation` label
-- **Bug Reports**: Use the [Bug Report template](https://github.com/your-username/laravel-hmac-auth/issues/new?template=bug_report.yml)
-- **Feature Requests**: Use the [Feature Request template](https://github.com/your-username/laravel-hmac-auth/issues/new?template=feature_request.yml)
+- **Bug Reports**: Use the Bug Report template
+- **Feature Requests**: Use the Feature Request template
 - **Security Issues**: See [SECURITY.md](../SECURITY.md)

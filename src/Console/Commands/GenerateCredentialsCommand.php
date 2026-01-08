@@ -14,10 +14,10 @@ use Illuminate\Console\Command;
 class GenerateCredentialsCommand extends Command
 {
     protected $signature = 'hmac:generate
-                            {--company= : Company ID for the credential}
+                            {--tenant= : Tenant ID (required when tenancy is enabled)}
                             {--environment=testing : Environment (production or testing)}
                             {--expires= : Days until expiration (optional)}
-                            {--user= : User ID who creates this credential}';
+                            {--user=1 : User ID who creates this credential}';
 
     protected $description = 'Generate new HMAC API credentials';
 
@@ -29,16 +29,25 @@ class GenerateCredentialsCommand extends Command
 
     public function handle(): int
     {
-        $companyId = $this->option('company') ?: $this->ask('Company ID');
+        $tenancyEnabled = (bool) config('hmac.tenancy.enabled', false);
+        $tenantId = null;
+
+        if ($tenancyEnabled) {
+            $tenantId = $this->option('tenant') ?: $this->ask('Tenant ID');
+
+            if (! is_numeric($tenantId)) {
+                $this->error('Tenant ID must be a number');
+
+                return self::FAILURE;
+            }
+
+            $tenantId = (int) $tenantId;
+        }
+
+        /** @var string $environment */
         $environment = $this->option('environment');
         $expiresInDays = $this->option('expires');
-        $userId = $this->option('user') ?: 1;
-
-        if (! is_numeric($companyId)) {
-            $this->error('Company ID must be a number');
-
-            return self::FAILURE;
-        }
+        $userId = $this->option('user');
 
         if (! in_array($environment, ApiCredential::VALID_ENVIRONMENTS, true)) {
             $this->error('Environment must be "production" or "testing"');
@@ -54,25 +63,29 @@ class GenerateCredentialsCommand extends Command
         $this->info('Generating API credentials...');
 
         $result = $this->credentialService->generate(
-            companyId: (int) $companyId,
             createdBy: (int) $userId,
             environment: $environment,
             expiresAt: $expiresAt,
+            tenantId: $tenantId,
         );
 
         $this->newLine();
         $this->info('API credentials generated successfully!');
         $this->newLine();
 
-        $this->table(
-            ['Field', 'Value'],
-            [
-                ['Client ID', $result['credential']->client_id],
-                ['Client Secret', $result['plain_secret']],
-                ['Environment', $environment],
-                ['Expires At', $expiresAt?->toDateTimeString() ?? 'Never'],
-            ]
-        );
+        $tableData = [
+            ['Client ID', $result['credential']->client_id],
+            ['Client Secret', $result['plain_secret']],
+            ['Environment', $environment],
+            ['Expires At', $expiresAt?->toDateTimeString() ?? 'Never'],
+        ];
+
+        if ($tenancyEnabled) {
+            $tenantColumn = (string) config('hmac.tenancy.column', 'tenant_id');
+            array_splice($tableData, 1, 0, [[$tenantColumn, (string) $tenantId]]);
+        }
+
+        $this->table(['Field', 'Value'], $tableData);
 
         $this->newLine();
         $this->warn('IMPORTANT: Store the Client Secret securely. It cannot be retrieved later.');

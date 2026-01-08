@@ -29,9 +29,8 @@ final readonly class RequestLogger implements RequestLoggerInterface
      */
     public function logSuccessfulAttempt(Request $request, ApiCredential $credential): void
     {
-        $this->logRepository->create([
+        $data = [
             'api_credential_id' => $credential->id,
-            'company_id' => $credential->company_id,
             'client_id' => $credential->client_id,
             'request_method' => $request->method(),
             'request_path' => $this->truncatePath($request->getPathInfo()),
@@ -39,7 +38,14 @@ final readonly class RequestLogger implements RequestLoggerInterface
             'user_agent' => $this->truncateUserAgent($request->userAgent()),
             'signature_valid' => true,
             'response_status' => 200,
-        ]);
+        ];
+
+        if ((bool) config('hmac.tenancy.enabled', false)) {
+            $tenantColumn = (string) config('hmac.tenancy.column', 'tenant_id');
+            $data[$tenantColumn] = $credential->{$tenantColumn};
+        }
+
+        $this->logRepository->create($data);
     }
 
     /**
@@ -51,9 +57,8 @@ final readonly class RequestLogger implements RequestLoggerInterface
         string $reason,
         ?ApiCredential $credential = null
     ): void {
-        $this->logRepository->create([
+        $data = [
             'api_credential_id' => $credential?->id,
-            'company_id' => $credential?->company_id,
             'client_id' => $clientId,
             'request_method' => $request->method(),
             'request_path' => $this->truncatePath($request->getPathInfo()),
@@ -61,7 +66,14 @@ final readonly class RequestLogger implements RequestLoggerInterface
             'user_agent' => $this->truncateUserAgent($request->userAgent()),
             'signature_valid' => false,
             'response_status' => 401,
-        ]);
+        ];
+
+        if ((bool) config('hmac.tenancy.enabled', false) && $credential !== null) {
+            $tenantColumn = (string) config('hmac.tenancy.column', 'tenant_id');
+            $data[$tenantColumn] = $credential->{$tenantColumn};
+        }
+
+        $this->logRepository->create($data);
 
         Log::warning('HMAC authentication failed', [
             'client_id' => $clientId,

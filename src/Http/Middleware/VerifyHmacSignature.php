@@ -52,7 +52,14 @@ final readonly class VerifyHmacSignature
 
         $credential = $resultArray['credential'];
         $request->attributes->set('hmac_credential', $credential);
-        $request->attributes->set('company_id', $credential->company_id);
+
+        // Set tenant attribute when tenancy is enabled
+        if ((bool) config('hmac.tenancy.enabled', false)) {
+            $tenantColumn = (string) config('hmac.tenancy.column', 'tenant_id');
+            $tenantId = $credential->{$tenantColumn};
+            $request->attributes->set('tenant_id', $tenantId);
+            $request->attributes->set($tenantColumn, $tenantId);
+        }
 
         $this->dispatchSuccessEvent($request, $result);
 

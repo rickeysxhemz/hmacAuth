@@ -31,7 +31,10 @@ final readonly class ApiCredentialService
     }
 
     /**
-     * Generate new API credentials for a company.
+     * Generate new API credentials.
+     *
+     * When tenancy is enabled, tenantId is required.
+     * When tenancy is disabled (standalone mode), tenantId is ignored.
      *
      * @return array{credential: ApiCredential, plain_secret: string}
      *
@@ -39,10 +42,10 @@ final readonly class ApiCredentialService
      * @throws InvalidArgumentException
      */
     public function generate(
-        int $companyId,
         int $createdBy,
         string $environment = ApiCredential::ENVIRONMENT_TESTING,
-        ?CarbonInterface $expiresAt = null
+        ?CarbonInterface $expiresAt = null,
+        int|string|null $tenantId = null,
     ): array {
         if (! ApiCredential::isValidEnvironment($environment)) {
             throw new InvalidArgumentException(
@@ -50,12 +53,17 @@ final readonly class ApiCredentialService
             );
         }
 
-        return DB::transaction(function () use ($companyId, $createdBy, $environment, $expiresAt): array {
+        $tenancyEnabled = (bool) config('hmac.tenancy.enabled', false);
+
+        if ($tenancyEnabled && $tenantId === null) {
+            throw new InvalidArgumentException('Tenant ID is required when tenancy is enabled');
+        }
+
+        return DB::transaction(function () use ($createdBy, $environment, $expiresAt, $tenantId, $tenancyEnabled): array {
             $clientId = $this->keyGenerator->generateClientId($environment);
             $plainSecret = $this->keyGenerator->generateClientSecret();
 
-            $credential = $this->repository->create([
-                'company_id' => $companyId,
+            $data = [
                 'client_id' => $clientId,
                 'client_secret' => $plainSecret,
                 'hmac_algorithm' => config('hmac.algorithm', 'sha256'),
@@ -63,10 +71,19 @@ final readonly class ApiCredentialService
                 'is_active' => true,
                 'expires_at' => $expiresAt,
                 'created_by' => $createdBy,
-            ]);
+            ];
+
+            if ($tenancyEnabled && $tenantId !== null) {
+                $tenantColumn = (string) config('hmac.tenancy.column', 'tenant_id');
+                $data[$tenantColumn] = $tenantId;
+            }
+
+            $credential = $this->repository->create($data);
+
+            $relations = $tenancyEnabled ? ['tenant', 'creator'] : ['creator'];
 
             return [
-                'credential' => $credential->load(['company', 'creator']),
+                'credential' => $credential->load($relations),
                 'plain_secret' => $plainSecret,
             ];
         });
@@ -91,8 +108,10 @@ final readonly class ApiCredentialService
                 'client_secret' => $newPlainSecret,
             ]);
 
+            $relations = $this->getDefaultRelations();
+
             return [
-                'credential' => $this->invalidateAndRefresh($credential, ['company', 'creator']),
+                'credential' => $this->invalidateAndRefresh($credential, $relations),
                 'new_secret' => $newPlainSecret,
                 'old_secret_expires_at' => $expiresAt->toDateTimeString(),
             ];
@@ -117,7 +136,23 @@ final readonly class ApiCredentialService
         $this->invalidateCacheFor($oldClientId);
 
         /** @var ApiCredential */
-        return $credential->fresh(['company', 'creator']);
+        return $credential->fresh($this->getDefaultRelations());
+    }
+
+    /**
+     * Get default relations based on tenancy configuration.
+     *
+     * @return list<string>
+     */
+    private function getDefaultRelations(): array
+    {
+        $relations = ['creator'];
+
+        if ((bool) config('hmac.tenancy.enabled', false)) {
+            $relations[] = 'tenant';
+        }
+
+        return $relations;
     }
 
     /**

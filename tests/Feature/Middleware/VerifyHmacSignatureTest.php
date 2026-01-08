@@ -81,7 +81,6 @@ describe('VerifyHmacSignature Middleware', function () {
             $middleware = new VerifyHmacSignature($this->verificationService, $config);
 
             $credential = Mockery::mock(ApiCredential::class)->makePartial();
-            $credential->company_id = 123;
 
             $result = VerificationResult::success($credential);
 
@@ -108,7 +107,6 @@ describe('VerifyHmacSignature Middleware', function () {
             $middleware = new VerifyHmacSignature($this->verificationService, $config);
 
             $credential = Mockery::mock(ApiCredential::class)->makePartial();
-            $credential->company_id = 123;
 
             $result = VerificationResult::success($credential);
 
@@ -128,12 +126,15 @@ describe('VerifyHmacSignature Middleware', function () {
             expect($capturedCredential)->toBe($credential);
         });
 
-        it('sets company_id attribute on request', function () {
+        it('sets tenant_id attribute on request when tenancy enabled', function () {
+            config(['hmac.tenancy.enabled' => true]);
+            config(['hmac.tenancy.column' => 'tenant_id']);
+
             $config = createMiddlewareConfig();
             $middleware = new VerifyHmacSignature($this->verificationService, $config);
 
             $credential = Mockery::mock(ApiCredential::class)->makePartial();
-            $credential->company_id = 456;
+            $credential->tenant_id = 456;
 
             $result = VerificationResult::success($credential);
 
@@ -142,15 +143,44 @@ describe('VerifyHmacSignature Middleware', function () {
                 ->andReturn($result);
 
             $request = Request::create('/api/test', 'GET');
-            $capturedCompanyId = null;
+            $capturedTenantId = null;
 
-            $middleware->handle($request, function ($req) use (&$capturedCompanyId) {
-                $capturedCompanyId = $req->attributes->get('company_id');
+            $middleware->handle($request, function ($req) use (&$capturedTenantId) {
+                $capturedTenantId = $req->attributes->get('tenant_id');
 
                 return response()->json(['success' => true]);
             });
 
-            expect($capturedCompanyId)->toBe(456);
+            expect($capturedTenantId)->toBe(456);
+
+            // Reset config
+            config(['hmac.tenancy.enabled' => false]);
+        });
+
+        it('does not set tenant_id when tenancy disabled', function () {
+            config(['hmac.tenancy.enabled' => false]);
+
+            $config = createMiddlewareConfig();
+            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+
+            $credential = Mockery::mock(ApiCredential::class)->makePartial();
+
+            $result = VerificationResult::success($credential);
+
+            $this->verificationService->shouldReceive('verify')
+                ->once()
+                ->andReturn($result);
+
+            $request = Request::create('/api/test', 'GET');
+            $capturedTenantId = 'not-set';
+
+            $middleware->handle($request, function ($req) use (&$capturedTenantId) {
+                $capturedTenantId = $req->attributes->get('tenant_id', 'not-set');
+
+                return response()->json(['success' => true]);
+            });
+
+            expect($capturedTenantId)->toBe('not-set');
         });
 
         it('dispatches AuthenticationSucceeded event', function () {
@@ -158,7 +188,6 @@ describe('VerifyHmacSignature Middleware', function () {
             $middleware = new VerifyHmacSignature($this->verificationService, $config);
 
             $credential = Mockery::mock(ApiCredential::class)->makePartial();
-            $credential->company_id = 123;
 
             $result = VerificationResult::success($credential);
 

@@ -16,13 +16,14 @@ class ApiCredentialFactory extends Factory
 
     /**
      * Define the model's default state.
+     * Note: Tenant column is NOT included by default (standalone mode).
+     * Use forTenant() to add tenant when testing multi-tenancy.
      *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
         return [
-            'company_id' => $this->faker->numberBetween(1, 100),
             'client_id' => 'test_'.bin2hex(random_bytes(16)),
             'client_secret' => $this->generateSecret(),
             'hmac_algorithm' => 'sha256',
@@ -149,12 +150,15 @@ class ApiCredentialFactory extends Factory
     }
 
     /**
-     * Set a specific company ID.
+     * Set a specific tenant ID.
+     * Uses the configured tenant column name.
      */
-    public function forCompany(int $companyId): static
+    public function forTenant(int|string $tenantId): static
     {
+        $column = (string) config('hmac.tenancy.column', 'tenant_id');
+
         return $this->state(fn (array $attributes) => [
-            'company_id' => $companyId,
+            $column => $tenantId,
         ]);
     }
 

@@ -8,6 +8,7 @@ use HmacAuth\Console\Commands\CleanupLogsCommand;
 use HmacAuth\Console\Commands\GenerateCredentialsCommand;
 use HmacAuth\Console\Commands\InstallCommand;
 use HmacAuth\Console\Commands\RotateSecretCommand;
+use HmacAuth\Console\Commands\SetupTenancyCommand;
 use HmacAuth\Contracts\ApiCredentialRepositoryInterface;
 use HmacAuth\Contracts\ApiRequestLogRepositoryInterface;
 use HmacAuth\Contracts\HmacVerifierInterface;
@@ -174,6 +175,7 @@ final class HmacAuthServiceProvider extends ServiceProvider
             GenerateCredentialsCommand::class,
             RotateSecretCommand::class,
             CleanupLogsCommand::class,
+            SetupTenancyCommand::class,
         ]);
     }
 

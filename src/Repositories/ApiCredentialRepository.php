@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 /**
  * Repository for API credential data access operations.
@@ -153,14 +154,20 @@ final readonly class ApiCredentialRepository implements ApiCredentialRepositoryI
     }
 
     /**
-     * Get all credentials for a company (limited).
+     * Get all credentials for a tenant (limited).
      *
      * @return Collection<int, ApiCredential>
+     *
+     * @throws RuntimeException When tenancy is not enabled
      */
-    public function getByCompany(int $companyId, int $limit = self::MAX_COLLECTION_LIMIT): Collection
+    public function getByTenant(int|string $tenantId, int $limit = self::MAX_COLLECTION_LIMIT): Collection
     {
+        if (! (bool) config('hmac.tenancy.enabled', false)) {
+            throw new RuntimeException('Tenancy is not enabled. Enable tenancy in config/hmac.php to use this method.');
+        }
+
         return $this->query()
-            ->forCompany($companyId)
+            ->forTenant($tenantId)
             ->withDefaultRelations()
             ->latest()
             ->limit($limit)
@@ -168,14 +175,20 @@ final readonly class ApiCredentialRepository implements ApiCredentialRepositoryI
     }
 
     /**
-     * Get active credentials for a company (limited).
+     * Get active credentials for a tenant (limited).
      *
      * @return Collection<int, ApiCredential>
+     *
+     * @throws RuntimeException When tenancy is not enabled
      */
-    public function getActiveByCompany(int $companyId, int $limit = self::MAX_COLLECTION_LIMIT): Collection
+    public function getActiveByTenant(int|string $tenantId, int $limit = self::MAX_COLLECTION_LIMIT): Collection
     {
+        if (! (bool) config('hmac.tenancy.enabled', false)) {
+            throw new RuntimeException('Tenancy is not enabled. Enable tenancy in config/hmac.php to use this method.');
+        }
+
         return $this->query()
-            ->forCompany($companyId)
+            ->forTenant($tenantId)
             ->active()
             ->withDefaultRelations()
             ->latest()
@@ -290,12 +303,18 @@ final readonly class ApiCredentialRepository implements ApiCredentialRepositoryI
     }
 
     /**
-     * Count active credentials for company.
+     * Count active credentials for tenant.
+     *
+     * @throws RuntimeException When tenancy is not enabled
      */
-    public function countActiveByCompany(int $companyId): int
+    public function countActiveByTenant(int|string $tenantId): int
     {
+        if (! (bool) config('hmac.tenancy.enabled', false)) {
+            throw new RuntimeException('Tenancy is not enabled. Enable tenancy in config/hmac.php to use this method.');
+        }
+
         return $this->query()
-            ->forCompany($companyId)
+            ->forTenant($tenantId)
             ->active()
             ->count();
     }

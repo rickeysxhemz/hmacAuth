@@ -11,6 +11,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
+use RuntimeException;
 use stdClass;
 
 /**
@@ -40,14 +41,21 @@ final readonly class ApiRequestLogRepository implements ApiRequestLogRepositoryI
     }
 
     /**
-     * Get logs for a company
+     * Get logs for a tenant.
+     * Only available when tenancy is enabled.
      *
      * @return Collection<int, ApiRequestLog>
+     *
+     * @throws RuntimeException When tenancy is not enabled
      */
-    public function getByCompany(int $companyId, int $limit = 100): Collection
+    public function getByTenant(int|string $tenantId, int $limit = 100): Collection
     {
+        if (! (bool) config('hmac.tenancy.enabled', false)) {
+            throw new RuntimeException('Tenancy is not enabled. Enable tenancy in config/hmac.php to use this method.');
+        }
+
         return $this->query()
-            ->forCompany($companyId)
+            ->forTenant($tenantId)
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
@@ -129,8 +137,15 @@ final readonly class ApiRequestLogRepository implements ApiRequestLogRepositoryI
      */
     public function paginate(int $perPage = 50): LengthAwarePaginator
     {
+        $relations = ['apiCredential'];
+
+        if ((bool) config('hmac.tenancy.enabled', false)) {
+            $relations[] = 'tenant';
+        }
+
         return $this->query()
-            ->with(['company', 'apiCredential'])->latest()
+            ->with($relations)
+            ->latest()
             ->paginate($perPage);
     }
 
@@ -162,16 +177,23 @@ final readonly class ApiRequestLogRepository implements ApiRequestLogRepositoryI
     }
 
     /**
-     * Get statistics for company (optimized single query)
+     * Get statistics for tenant (optimized single query).
+     * Only available when tenancy is enabled.
      *
      * @return array{total: int, successful: int, failed: int, success_rate: float}
+     *
+     * @throws RuntimeException When tenancy is not enabled
      */
-    public function getStats(int $companyId, int $days = 7): array
+    public function getStatsForTenant(int|string $tenantId, int $days = 7): array
     {
+        if (! (bool) config('hmac.tenancy.enabled', false)) {
+            throw new RuntimeException('Tenancy is not enabled. Enable tenancy in config/hmac.php to use this method.');
+        }
+
         $startDate = now()->subDays($days);
 
         $result = $this->query()
-            ->forCompany($companyId)
+            ->forTenant($tenantId)
             ->where('created_at', '>=', $startDate)
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(CASE WHEN signature_valid = 1 THEN 1 ELSE 0 END) as successful')

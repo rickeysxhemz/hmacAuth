@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HmacAuth\Models;
 
 use Carbon\CarbonInterface;
+use HmacAuth\Concerns\HasTenantScoping;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property int|null $api_credential_id
- * @property int|null $company_id
  * @property string $client_id
  * @property string $request_method
  * @property string $request_path
@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @method static Builder<static> failed()
  * @method static Builder<static> successful()
- * @method static Builder<static> forCompany(int $companyId)
+ * @method static Builder<static> forTenant(int|string $tenantId)
  * @method static Builder<static> forClient(string $clientId)
  * @method static Builder<static> dateRange(CarbonInterface $from, CarbonInterface $to)
  * @method static Builder<static> recent(int $minutes)
@@ -34,11 +34,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ApiRequestLog extends Model
 {
+    use HasTenantScoping;
     public $timestamps = false;
 
     protected $fillable = [
         'api_credential_id',
-        'company_id',
         'client_id',
         'request_method',
         'request_path',
@@ -54,9 +54,7 @@ class ApiRequestLog extends Model
         'created_at' => 'datetime',
     ];
 
-    protected $hidden = [
-        'company_id',
-    ];
+    protected $hidden = [];
 
     /**
      * Scope: Get failed authentication attempts
@@ -72,14 +70,6 @@ class ApiRequestLog extends Model
     protected function scopeSuccessful(Builder $query): void
     {
         $query->where('signature_valid', true);
-    }
-
-    /**
-     * Scope: Filter by company
-     */
-    protected function scopeForCompany(Builder $query, int $companyId): void
-    {
-        $query->where('company_id', $companyId);
     }
 
     /**
@@ -115,24 +105,10 @@ class ApiRequestLog extends Model
     }
 
     /**
-     * Get the company model class from config.
-     */
-    protected function getCompanyModelClass(): string
-    {
-        /** @var string */
-        return config('hmac.models.company', 'App\\Models\\Company');
-    }
-
-    /**
      * Relationships
      */
     public function apiCredential(): BelongsTo
     {
         return $this->belongsTo(ApiCredential::class);
-    }
-
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo($this->getCompanyModelClass());
     }
 }

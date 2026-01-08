@@ -13,13 +13,16 @@ describe('ApiRequestLog', function () {
         });
     });
 
-    describe('fillable', function () {
-        it('has correct fillable attributes', function () {
+    describe('fillable (standalone mode)', function () {
+        beforeEach(function () {
+            config(['hmac.tenancy.enabled' => false]);
+        });
+
+        it('has correct fillable attributes in standalone mode', function () {
             $log = new ApiRequestLog;
 
             expect($log->getFillable())->toBe([
                 'api_credential_id',
-                'company_id',
                 'client_id',
                 'request_method',
                 'request_path',
@@ -28,6 +31,23 @@ describe('ApiRequestLog', function () {
                 'signature_valid',
                 'response_status',
             ]);
+        });
+    });
+
+    describe('fillable (tenancy mode)', function () {
+        beforeEach(function () {
+            config(['hmac.tenancy.enabled' => true]);
+            config(['hmac.tenancy.column' => 'tenant_id']);
+        });
+
+        afterEach(function () {
+            config(['hmac.tenancy.enabled' => false]);
+        });
+
+        it('has tenant column in fillable when tenancy is enabled', function () {
+            $log = new ApiRequestLog;
+
+            expect($log->getFillable())->toContain('tenant_id');
         });
     });
 
@@ -57,15 +77,24 @@ describe('ApiRequestLog', function () {
         });
     });
 
-    describe('hidden attributes', function () {
-        it('hides company_id in array', function () {
+    describe('hidden attributes (tenancy mode)', function () {
+        beforeEach(function () {
+            config(['hmac.tenancy.enabled' => true]);
+            config(['hmac.tenancy.column' => 'tenant_id']);
+        });
+
+        afterEach(function () {
+            config(['hmac.tenancy.enabled' => false]);
+        });
+
+        it('hides tenant_id in array when tenancy enabled', function () {
             $log = new ApiRequestLog;
-            $log->company_id = 123;
+            $log->tenant_id = 123;
             $log->client_id = 'test-client';
 
             $array = $log->toArray();
 
-            expect($array)->not->toHaveKey('company_id');
+            expect($array)->not->toHaveKey('tenant_id');
         });
     });
 
@@ -73,7 +102,6 @@ describe('ApiRequestLog', function () {
         it('can assign all fillable attributes', function () {
             $log = new ApiRequestLog([
                 'api_credential_id' => 1,
-                'company_id' => 2,
                 'client_id' => 'test-client',
                 'request_method' => 'POST',
                 'request_path' => '/api/users',
@@ -84,7 +112,6 @@ describe('ApiRequestLog', function () {
             ]);
 
             expect($log->api_credential_id)->toBe(1)
-                ->and($log->company_id)->toBe(2)
                 ->and($log->client_id)->toBe('test-client')
                 ->and($log->request_method)->toBe('POST')
                 ->and($log->request_path)->toBe('/api/users')
@@ -124,8 +151,8 @@ describe('ApiRequestLog', function () {
             expect(method_exists(ApiRequestLog::class, 'scopeSuccessful'))->toBeTrue();
         });
 
-        it('has forCompany scope method', function () {
-            expect(method_exists(ApiRequestLog::class, 'scopeForCompany'))->toBeTrue();
+        it('has forTenant scope method', function () {
+            expect(method_exists(ApiRequestLog::class, 'scopeForTenant'))->toBeTrue();
         });
 
         it('has forClient scope method', function () {
@@ -150,8 +177,8 @@ describe('ApiRequestLog', function () {
             expect(method_exists(ApiRequestLog::class, 'apiCredential'))->toBeTrue();
         });
 
-        it('has company relationship method', function () {
-            expect(method_exists(ApiRequestLog::class, 'company'))->toBeTrue();
+        it('has tenant relationship method', function () {
+            expect(method_exists(ApiRequestLog::class, 'tenant'))->toBeTrue();
         });
     });
 });

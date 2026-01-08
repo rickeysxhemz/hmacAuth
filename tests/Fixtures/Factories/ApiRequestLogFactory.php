@@ -16,6 +16,8 @@ class ApiRequestLogFactory extends Factory
 
     /**
      * Define the model's default state.
+     * Note: Tenant column is NOT included by default (standalone mode).
+     * Use forTenant() to add tenant when testing multi-tenancy.
      *
      * @return array<string, mixed>
      */
@@ -23,7 +25,6 @@ class ApiRequestLogFactory extends Factory
     {
         return [
             'api_credential_id' => null,
-            'company_id' => $this->faker->numberBetween(1, 100),
             'client_id' => 'test_'.bin2hex(random_bytes(16)),
             'request_method' => $this->faker->randomElement(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
             'request_path' => '/api/'.$this->faker->slug(2),
@@ -68,12 +69,15 @@ class ApiRequestLogFactory extends Factory
     }
 
     /**
-     * Set a specific company ID.
+     * Set a specific tenant ID.
+     * Uses the configured tenant column name.
      */
-    public function forCompany(int $companyId): static
+    public function forTenant(int|string $tenantId): static
     {
+        $column = (string) config('hmac.tenancy.column', 'tenant_id');
+
         return $this->state(fn (array $attributes) => [
-            'company_id' => $companyId,
+            $column => $tenantId,
         ]);
     }
 
@@ -90,11 +94,10 @@ class ApiRequestLogFactory extends Factory
     /**
      * Set a specific credential.
      */
-    public function forCredential(int $credentialId, int $companyId, string $clientId): static
+    public function forCredential(int $credentialId, string $clientId): static
     {
         return $this->state(fn (array $attributes) => [
             'api_credential_id' => $credentialId,
-            'company_id' => $companyId,
             'client_id' => $clientId,
         ]);
     }

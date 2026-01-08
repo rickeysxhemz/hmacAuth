@@ -102,7 +102,6 @@ abstract class TestCase extends Orchestra
         $clientSecret = generateTestSecret();
 
         $credential = \HmacAuth\Models\ApiCredential::create(array_merge([
-            'company_id' => 1,
             'client_id' => $clientId,
             'client_secret' => $clientSecret,
             'hmac_algorithm' => 'sha256',

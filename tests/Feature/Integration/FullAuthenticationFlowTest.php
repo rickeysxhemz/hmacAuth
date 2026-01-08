@@ -12,7 +12,6 @@ describe('Full Authentication Flow', function () {
         Route::middleware('hmac.verify')->post('/test-api/resource', function () {
             return response()->json([
                 'success' => true,
-                'company_id' => request()->attributes->get('company_id'),
                 'message' => 'Authenticated successfully',
             ]);
         });
@@ -32,7 +31,6 @@ describe('Full Authentication Flow', function () {
             $clientSecret = generateTestSecret();
 
             $credential = ApiCredential::create([
-                'company_id' => 1,
                 'client_id' => $clientId,
                 'client_secret' => $clientSecret,
                 'hmac_algorithm' => 'sha256',
@@ -68,7 +66,6 @@ describe('Full Authentication Flow', function () {
             $response->assertStatus(200)
                 ->assertJson([
                     'success' => true,
-                    'company_id' => 1,
                 ]);
         });
 
@@ -77,7 +74,6 @@ describe('Full Authentication Flow', function () {
             $clientSecret = generateTestSecret();
 
             $credential = ApiCredential::create([
-                'company_id' => 1,
                 'client_id' => $clientId,
                 'client_secret' => $clientSecret,
                 'hmac_algorithm' => 'sha256',
@@ -157,7 +153,6 @@ describe('Full Authentication Flow', function () {
             $clientSecret = generateTestSecret();
 
             ApiCredential::create([
-                'company_id' => 1,
                 'client_id' => $clientId,
                 'client_secret' => $clientSecret,
                 'hmac_algorithm' => 'sha256',
@@ -188,7 +183,6 @@ describe('Full Authentication Flow', function () {
             $clientSecret = generateTestSecret();
 
             ApiCredential::create([
-                'company_id' => 1,
                 'client_id' => $clientId,
                 'client_secret' => $clientSecret,
                 'hmac_algorithm' => 'sha256',
@@ -220,7 +214,6 @@ describe('Full Authentication Flow', function () {
             $clientSecret = generateTestSecret();
 
             ApiCredential::create([
-                'company_id' => 1,
                 'client_id' => $clientId,
                 'client_secret' => $clientSecret,
                 'hmac_algorithm' => 'sha256',
@@ -251,7 +244,6 @@ describe('Full Authentication Flow', function () {
             $clientSecret = generateTestSecret();
 
             ApiCredential::create([
-                'company_id' => 1,
                 'client_id' => $clientId,
                 'client_secret' => $clientSecret,
                 'hmac_algorithm' => 'sha256',
@@ -282,7 +274,6 @@ describe('Full Authentication Flow', function () {
             $clientSecret = generateTestSecret();
 
             ApiCredential::create([
-                'company_id' => 1,
                 'client_id' => $clientId,
                 'client_secret' => $clientSecret,
                 'hmac_algorithm' => 'sha256',

@@ -53,15 +53,18 @@ final readonly class HmacManager
     /**
      * Generate new API credentials.
      *
+     * When tenancy is enabled, tenantId is required.
+     * When tenancy is disabled (standalone mode), tenantId is ignored.
+     *
      * @return array{credential: ApiCredential, plain_secret: string}
      */
     public function generateCredentials(
-        int $companyId,
         int $createdBy,
         string $environment = 'testing',
         ?CarbonInterface $expiresAt = null,
+        int|string|null $tenantId = null,
     ): array {
-        return $this->credentialService->generate($companyId, $createdBy, $environment, $expiresAt);
+        return $this->credentialService->generate($createdBy, $environment, $expiresAt, $tenantId);
     }
 
     /**

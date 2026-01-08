@@ -24,11 +24,14 @@ interface ApiRequestLogRepositoryInterface
     public function create(array $data): ApiRequestLog;
 
     /**
-     * Get logs for a company.
+     * Get logs for a tenant.
+     * Only available when tenancy is enabled.
      *
      * @return Collection<int, ApiRequestLog>
+     *
+     * @throws \RuntimeException When tenancy is not enabled
      */
-    public function getByCompany(int $companyId, int $limit = 100): Collection;
+    public function getByTenant(int|string $tenantId, int $limit = 100): Collection;
 
     /**
      * Get logs for a client.
@@ -83,11 +86,14 @@ interface ApiRequestLogRepositoryInterface
     public function paginateByDateRange(CarbonInterface $from, CarbonInterface $to, int $perPage = 50): LengthAwarePaginator;
 
     /**
-     * Get statistics for company.
+     * Get statistics for tenant.
+     * Only available when tenancy is enabled.
      *
      * @return array{total: int, successful: int, failed: int, success_rate: float}
+     *
+     * @throws \RuntimeException When tenancy is not enabled
      */
-    public function getStats(int $companyId, int $days = 7): array;
+    public function getStatsForTenant(int|string $tenantId, int $days = 7): array;
 
     /**
      * Delete old logs in chunks (Octane-safe).

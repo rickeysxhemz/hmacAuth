@@ -110,11 +110,44 @@ return [
     ],
 
     /**
+     * Multi-tenancy configuration.
+     *
+     * When 'enabled' is false (default), the package operates in standalone mode
+     * without tenant scoping. Credentials are not associated with any tenant.
+     *
+     * When 'enabled' is true, credentials are scoped to tenants using the
+     * configured column name and model.
+     */
+    'tenancy' => [
+        /**
+         * Enable multi-tenancy support.
+         * Default: false (standalone mode)
+         */
+        'enabled' => env('HMAC_TENANCY_ENABLED', false),
+
+        /**
+         * The database column name used for tenant foreign key.
+         * This column will be added to api_credentials and api_request_logs tables.
+         *
+         * Common options: 'tenant_id', 'company_id', 'team_id', 'organization_id'
+         * Default: 'tenant_id'
+         */
+        'column' => env('HMAC_TENANT_COLUMN', 'tenant_id'),
+
+        /**
+         * The fully qualified class name of your tenant model.
+         * This model is used for the tenant relationship on credentials.
+         *
+         * Default: 'App\Models\Tenant'
+         */
+        'model' => env('HMAC_TENANT_MODEL', 'App\\Models\\Tenant'),
+    ],
+
+    /**
      * Model classes for relationships
      * Override these if your application uses different model classes
      */
     'models' => [
-        'company' => env('HMAC_COMPANY_MODEL', 'App\\Models\\Company'),
         'user' => env('HMAC_USER_MODEL', 'App\\Models\\User'),
     ],
 

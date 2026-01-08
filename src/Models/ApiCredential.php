@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HmacAuth\Models;
 
+use HmacAuth\Concerns\HasTenantScoping;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,6 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * @property int $id
- * @property int $company_id
  * @property string $client_id
  * @property string|null $client_secret
  * @property string|null $hmac_algorithm
@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Log;
  * @property \Illuminate\Support\Carbon|null $updated_at
  *
  * @method static Builder<static> active()
- * @method static Builder<static> forCompany(int $companyId)
+ * @method static Builder<static> forTenant(int|string $tenantId)
  * @method static Builder<static> forEnvironment(string $environment)
  * @method static Builder<static> expired()
  * @method static Builder<static> expiringSoon(int $days = 7)
@@ -40,6 +40,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ApiCredential extends Model
 {
+    use HasTenantScoping;
     /**
      * Valid environment values for API credentials.
      */
@@ -56,7 +57,6 @@ class ApiCredential extends Model
     ];
 
     protected $fillable = [
-        'company_id',
         'client_id',
         'client_secret',
         'hmac_algorithm',
@@ -81,7 +81,6 @@ class ApiCredential extends Model
     protected $hidden = [
         'client_secret',
         'old_client_secret',
-        'company_id',
     ];
 
     /**
@@ -158,14 +157,6 @@ class ApiCredential extends Model
     }
 
     /**
-     * Scope: Filter by company
-     */
-    protected function scopeForCompany(Builder $query, int $companyId): void
-    {
-        $query->where('company_id', $companyId);
-    }
-
-    /**
      * Scope: Filter by environment
      */
     protected function scopeForEnvironment(Builder $query, string $environment): void
@@ -200,7 +191,13 @@ class ApiCredential extends Model
      */
     protected function scopeWithDefaultRelations(Builder $query): void
     {
-        $query->with(['company', 'creator']);
+        $relations = ['creator'];
+
+        if ($this->isTenancyEnabled()) {
+            $relations[] = 'tenant';
+        }
+
+        $query->with($relations);
     }
 
     /**
@@ -308,15 +305,6 @@ class ApiCredential extends Model
     }
 
     /**
-     * Get the company model class from config.
-     */
-    protected function getCompanyModelClass(): string
-    {
-        /** @var string */
-        return config('hmac.models.company', 'App\\Models\\Company');
-    }
-
-    /**
      * Get the user model class from config.
      */
     protected function getUserModelClass(): string
@@ -328,11 +316,6 @@ class ApiCredential extends Model
     /**
      * Relationships
      */
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo($this->getCompanyModelClass());
-    }
-
     public function creator(): BelongsTo
     {
         return $this->belongsTo($this->getUserModelClass(), 'created_by');
