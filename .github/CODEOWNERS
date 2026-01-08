@@ -1,0 +1,25 @@
+# CODEOWNERS - Define code ownership for automatic review requests
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @your-username
+
+# Security-critical files require explicit review
+src/Services/HmacVerificationService.php @your-username
+src/Services/SignatureService.php @your-username
+src/Services/SecureKeyGenerator.php @your-username
+src/Middleware/HmacAuthMiddleware.php @your-username
+SECURITY.md @your-username
+
+# Configuration changes
+config/ @your-username
+
+# Database migrations
+database/migrations/ @your-username
+
+# CI/CD workflows
+.github/workflows/ @your-username
+
+# Documentation
+docs/ @your-username
+*.md @your-username
