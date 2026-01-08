@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HmacAuth;
 
-use DateTimeInterface;
+use Carbon\CarbonInterface;
 use HmacAuth\DTOs\SignaturePayload;
 use HmacAuth\DTOs\VerificationResult;
 use HmacAuth\Models\ApiCredential;
@@ -53,13 +53,13 @@ final readonly class HmacManager
     /**
      * Generate new API credentials.
      *
-     * @return array{client_id: string, client_secret: string, credential: ApiCredential}
+     * @return array{credential: ApiCredential, plain_secret: string}
      */
     public function generateCredentials(
         int $companyId,
         int $createdBy,
         string $environment = 'testing',
-        ?DateTimeInterface $expiresAt = null,
+        ?CarbonInterface $expiresAt = null,
     ): array {
         return $this->credentialService->generate($companyId, $createdBy, $environment, $expiresAt);
     }

@@ -34,13 +34,15 @@ class GenerateCredentialsCommand extends Command
         $expiresInDays = $this->option('expires');
         $userId = $this->option('user') ?: 1;
 
-        if (!is_numeric($companyId)) {
+        if (! is_numeric($companyId)) {
             $this->error('Company ID must be a number');
+
             return self::FAILURE;
         }
 
-        if (!in_array($environment, ApiCredential::VALID_ENVIRONMENTS, true)) {
+        if (! in_array($environment, ApiCredential::VALID_ENVIRONMENTS, true)) {
             $this->error('Environment must be "production" or "testing"');
+
             return self::FAILURE;
         }
 
@@ -65,8 +67,8 @@ class GenerateCredentialsCommand extends Command
         $this->table(
             ['Field', 'Value'],
             [
-                ['Client ID', $result['client_id']],
-                ['Client Secret', $result['client_secret']],
+                ['Client ID', $result['credential']->client_id],
+                ['Client Secret', $result['plain_secret']],
                 ['Environment', $environment],
                 ['Expires At', $expiresAt?->toDateTimeString() ?? 'Never'],
             ]

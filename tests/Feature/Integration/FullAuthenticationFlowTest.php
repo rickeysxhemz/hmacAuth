@@ -28,7 +28,7 @@ describe('Full Authentication Flow', function () {
     describe('successful authentication', function () {
         it('authenticates valid request with correct headers', function () {
             // Create a test credential
-            $clientId = 'test_' . bin2hex(random_bytes(16));
+            $clientId = 'test_'.bin2hex(random_bytes(16));
             $clientSecret = generateTestSecret();
 
             $credential = ApiCredential::create([
@@ -48,7 +48,7 @@ describe('Full Authentication Flow', function () {
             $path = '/test-api/resource';
 
             // Generate signature
-            $signatureService = new SignatureService();
+            $signatureService = new SignatureService;
             $payload = new \HmacAuth\DTOs\SignaturePayload(
                 method: 'POST',
                 path: $path,
@@ -73,7 +73,7 @@ describe('Full Authentication Flow', function () {
         });
 
         it('updates last_used_at on successful authentication', function () {
-            $clientId = 'test_' . bin2hex(random_bytes(16));
+            $clientId = 'test_'.bin2hex(random_bytes(16));
             $clientSecret = generateTestSecret();
 
             $credential = ApiCredential::create([
@@ -98,7 +98,7 @@ describe('Full Authentication Flow', function () {
             $nonce = bin2hex(random_bytes(16));
             $path = '/test-api/read';
 
-            $signatureService = new SignatureService();
+            $signatureService = new SignatureService;
             // Note: Laravel's getJson sends '[]' as the body, so we must sign with that
             $payload = new \HmacAuth\DTOs\SignaturePayload(
                 method: 'GET',
@@ -153,7 +153,7 @@ describe('Full Authentication Flow', function () {
         });
 
         it('rejects request with invalid signature', function () {
-            $clientId = 'test_' . bin2hex(random_bytes(16));
+            $clientId = 'test_'.bin2hex(random_bytes(16));
             $clientSecret = generateTestSecret();
 
             ApiCredential::create([
@@ -184,7 +184,7 @@ describe('Full Authentication Flow', function () {
         });
 
         it('rejects request with expired timestamp', function () {
-            $clientId = 'test_' . bin2hex(random_bytes(16));
+            $clientId = 'test_'.bin2hex(random_bytes(16));
             $clientSecret = generateTestSecret();
 
             ApiCredential::create([
@@ -216,7 +216,7 @@ describe('Full Authentication Flow', function () {
         });
 
         it('rejects request with short nonce', function () {
-            $clientId = 'test_' . bin2hex(random_bytes(16));
+            $clientId = 'test_'.bin2hex(random_bytes(16));
             $clientSecret = generateTestSecret();
 
             ApiCredential::create([
@@ -247,7 +247,7 @@ describe('Full Authentication Flow', function () {
         });
 
         it('rejects request with inactive credential', function () {
-            $clientId = 'test_' . bin2hex(random_bytes(16));
+            $clientId = 'test_'.bin2hex(random_bytes(16));
             $clientSecret = generateTestSecret();
 
             ApiCredential::create([
@@ -278,7 +278,7 @@ describe('Full Authentication Flow', function () {
         });
 
         it('rejects request with expired credential', function () {
-            $clientId = 'test_' . bin2hex(random_bytes(16));
+            $clientId = 'test_'.bin2hex(random_bytes(16));
             $clientSecret = generateTestSecret();
 
             ApiCredential::create([

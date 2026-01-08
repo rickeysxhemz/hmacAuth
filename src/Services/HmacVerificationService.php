@@ -103,7 +103,8 @@ final readonly class HmacVerificationService implements HmacVerifierInterface
         }
 
         $rawAlgorithm = is_string($credential->hmac_algorithm) ? $credential->hmac_algorithm : 'sha256';
-        $algorithm = HmacAlgorithm::tryFromString($rawAlgorithm)?->value ?? HmacAlgorithm::default()->value;
+        $hmacAlgorithm = HmacAlgorithm::tryFromString($rawAlgorithm);
+        $algorithm = $hmacAlgorithm !== null ? $hmacAlgorithm->value : HmacAlgorithm::default()->value;
 
         if (! $this->verifySignatureWithRotation($request, $credential, $signature, $timestamp, $nonce, $algorithm)) {
             $this->rateLimiter->recordFailure($clientId);

@@ -53,6 +53,7 @@ describe('VerifyHmacSignature Middleware', function () {
 
             $response = $middleware->handle($request, function ($req) use (&$called) {
                 $called = true;
+
                 return response()->json(['success' => true]);
             });
 
@@ -94,6 +95,7 @@ describe('VerifyHmacSignature Middleware', function () {
 
             $response = $middleware->handle($request, function ($req) use (&$called) {
                 $called = true;
+
                 return response()->json(['success' => true]);
             });
 
@@ -119,6 +121,7 @@ describe('VerifyHmacSignature Middleware', function () {
 
             $middleware->handle($request, function ($req) use (&$capturedCredential) {
                 $capturedCredential = $req->attributes->get('hmac_credential');
+
                 return response()->json(['success' => true]);
             });
 
@@ -143,6 +146,7 @@ describe('VerifyHmacSignature Middleware', function () {
 
             $middleware->handle($request, function ($req) use (&$capturedCompanyId) {
                 $capturedCompanyId = $req->attributes->get('company_id');
+
                 return response()->json(['success' => true]);
             });
 
@@ -293,6 +297,7 @@ describe('VerifyHmacSignature Middleware', function () {
 
             $middleware->handle($request, function () use (&$called) {
                 $called = true;
+
                 return response()->json(['success' => true]);
             });
 

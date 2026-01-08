@@ -31,6 +31,7 @@ class CleanupLogsCommand extends Command
 
         if ($days < 1) {
             $this->error('Days must be at least 1');
+
             return self::FAILURE;
         }
 
@@ -39,12 +40,13 @@ class CleanupLogsCommand extends Command
         $this->info("Cleaning up logs older than {$cutoffDate->toDateString()}...");
 
         if ($dryRun) {
-            $count = $this->logRepository->countOlderThan($cutoffDate);
+            $count = $this->logRepository->countOlderThan($days);
             $this->info("[DRY RUN] Would delete {$count} log entries");
+
             return self::SUCCESS;
         }
 
-        $deleted = $this->logRepository->deleteOlderThan($cutoffDate);
+        $deleted = $this->logRepository->deleteOlderThan($days);
 
         $this->info("Deleted {$deleted} log entries");
 

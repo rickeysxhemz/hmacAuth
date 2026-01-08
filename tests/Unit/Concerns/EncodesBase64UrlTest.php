@@ -22,7 +22,7 @@ class Base64UrlTestClass
 
 describe('EncodesBase64Url', function () {
     beforeEach(function () {
-        $this->encoder = new Base64UrlTestClass();
+        $this->encoder = new Base64UrlTestClass;
     });
 
     describe('base64UrlEncode()', function () {

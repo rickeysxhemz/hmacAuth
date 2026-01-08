@@ -24,9 +24,9 @@ class ApiRequestLogFactory extends Factory
         return [
             'api_credential_id' => null,
             'company_id' => $this->faker->numberBetween(1, 100),
-            'client_id' => 'test_' . bin2hex(random_bytes(16)),
+            'client_id' => 'test_'.bin2hex(random_bytes(16)),
             'request_method' => $this->faker->randomElement(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
-            'request_path' => '/api/' . $this->faker->slug(2),
+            'request_path' => '/api/'.$this->faker->slug(2),
             'ip_address' => $this->faker->ipv4(),
             'user_agent' => $this->faker->userAgent(),
             'signature_valid' => true,

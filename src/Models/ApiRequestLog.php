@@ -10,6 +10,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
+ * @property int $id
+ * @property int|null $api_credential_id
+ * @property int|null $company_id
+ * @property string $client_id
+ * @property string $request_method
+ * @property string $request_path
+ * @property string $ip_address
+ * @property string|null $user_agent
+ * @property bool $signature_valid
+ * @property int $response_status
+ * @property \Illuminate\Support\Carbon|null $created_at
+ *
  * @method static Builder<static> failed()
  * @method static Builder<static> successful()
  * @method static Builder<static> forCompany(int $companyId)

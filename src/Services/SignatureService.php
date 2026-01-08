@@ -53,6 +53,8 @@ final readonly class SignatureService implements SignatureServiceInterface
 
     private function validateAlgorithm(string $algorithm): string
     {
-        return HmacAlgorithm::tryFromString($algorithm)?->value ?? HmacAlgorithm::default()->value;
+        $hmacAlgorithm = HmacAlgorithm::tryFromString($algorithm);
+
+        return $hmacAlgorithm !== null ? $hmacAlgorithm->value : HmacAlgorithm::default()->value;
     }
 }

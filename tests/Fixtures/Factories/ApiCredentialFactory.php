@@ -23,7 +23,7 @@ class ApiCredentialFactory extends Factory
     {
         return [
             'company_id' => $this->faker->numberBetween(1, 100),
-            'client_id' => 'test_' . bin2hex(random_bytes(16)),
+            'client_id' => 'test_'.bin2hex(random_bytes(16)),
             'client_secret' => $this->generateSecret(),
             'hmac_algorithm' => 'sha256',
             'environment' => 'testing',
@@ -42,6 +42,7 @@ class ApiCredentialFactory extends Factory
     protected function generateSecret(int $length = 48): string
     {
         $bytes = random_bytes($length);
+
         return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($bytes));
     }
 

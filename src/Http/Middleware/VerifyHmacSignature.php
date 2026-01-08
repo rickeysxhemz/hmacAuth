@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace HmacAuth\Http\Middleware;
 
 use Closure;
+use HmacAuth\Contracts\HmacVerifierInterface;
 use HmacAuth\DTOs\HmacConfig;
 use HmacAuth\DTOs\VerificationResult;
 use HmacAuth\Enums\VerificationFailureReason;
 use HmacAuth\Events\AuthenticationFailed;
 use HmacAuth\Events\AuthenticationSucceeded;
 use HmacAuth\Models\ApiCredential;
-use HmacAuth\Contracts\HmacVerifierInterface;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 

@@ -75,24 +75,26 @@ final readonly class ApiCredentialService
     /**
      * Rotate secret for existing credential.
      *
-     * @return array{credential: ApiCredential, plain_secret: string}
+     * @return array{credential: ApiCredential, new_secret: string, old_secret_expires_at: string}
      *
      * @throws RandomException
      */
-    public function rotateSecret(ApiCredential $credential): array
+    public function rotateSecret(ApiCredential $credential, int $graceDays = 7): array
     {
-        return DB::transaction(function () use ($credential): array {
+        return DB::transaction(function () use ($credential, $graceDays): array {
             $newPlainSecret = $this->keyGenerator->generateClientSecret();
+            $expiresAt = now()->addDays($graceDays);
 
             $this->repository->update($credential, [
                 'old_client_secret' => $credential->client_secret,
-                'old_secret_expires_at' => now()->addDays(7),
+                'old_secret_expires_at' => $expiresAt,
                 'client_secret' => $newPlainSecret,
             ]);
 
             return [
                 'credential' => $this->invalidateAndRefresh($credential, ['company', 'creator']),
-                'plain_secret' => $newPlainSecret,
+                'new_secret' => $newPlainSecret,
+                'old_secret_expires_at' => $expiresAt->toDateTimeString(),
             ];
         });
     }

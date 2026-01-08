@@ -27,6 +27,7 @@ class RotateSecretCommand extends Command
 
     public function handle(): int
     {
+        /** @var string $credentialIdentifier */
         $credentialIdentifier = $this->argument('credential');
         $graceDays = (int) $this->option('grace-days');
 
@@ -35,20 +36,23 @@ class RotateSecretCommand extends Command
             ->orWhere('client_id', $credentialIdentifier)
             ->first();
 
-        if (!$credential) {
+        if (! $credential) {
             $this->error("Credential not found: {$credentialIdentifier}");
+
             return self::FAILURE;
         }
 
-        if (!$credential->is_active) {
+        if (! $credential->is_active) {
             $this->error('Cannot rotate secret for inactive credential');
+
             return self::FAILURE;
         }
 
         $this->info("Rotating secret for credential: {$credential->client_id}");
 
-        if (!$this->confirm('Are you sure you want to rotate this secret?')) {
+        if (! $this->confirm('Are you sure you want to rotate this secret?')) {
             $this->info('Operation cancelled.');
+
             return self::SUCCESS;
         }
 

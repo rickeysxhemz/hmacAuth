@@ -6,7 +6,7 @@ use HmacAuth\DTOs\SignaturePayload;
 use HmacAuth\Services\SignatureService;
 
 beforeEach(function () {
-    $this->service = new SignatureService();
+    $this->service = new SignatureService;
 });
 
 describe('SignatureService', function () {

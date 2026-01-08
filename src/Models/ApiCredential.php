@@ -13,6 +13,21 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
 /**
+ * @property int $id
+ * @property int $company_id
+ * @property string $client_id
+ * @property string|null $client_secret
+ * @property string|null $hmac_algorithm
+ * @property string $environment
+ * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $last_used_at
+ * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property string|null $old_client_secret
+ * @property \Illuminate\Support\Carbon|null $old_secret_expires_at
+ * @property int $created_by
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static Builder<static> active()
  * @method static Builder<static> forCompany(int $companyId)
  * @method static Builder<static> forEnvironment(string $environment)

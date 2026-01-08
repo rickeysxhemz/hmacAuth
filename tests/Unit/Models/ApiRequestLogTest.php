@@ -7,7 +7,7 @@ use HmacAuth\Models\ApiRequestLog;
 describe('ApiRequestLog', function () {
     describe('timestamps', function () {
         it('has timestamps disabled', function () {
-            $log = new ApiRequestLog();
+            $log = new ApiRequestLog;
 
             expect($log->timestamps)->toBeFalse();
         });
@@ -15,7 +15,7 @@ describe('ApiRequestLog', function () {
 
     describe('fillable', function () {
         it('has correct fillable attributes', function () {
-            $log = new ApiRequestLog();
+            $log = new ApiRequestLog;
 
             expect($log->getFillable())->toBe([
                 'api_credential_id',
@@ -33,7 +33,7 @@ describe('ApiRequestLog', function () {
 
     describe('casts', function () {
         it('casts signature_valid to boolean', function () {
-            $log = new ApiRequestLog();
+            $log = new ApiRequestLog;
             $log->signature_valid = 1;
 
             expect($log->signature_valid)->toBeTrue();
@@ -43,14 +43,14 @@ describe('ApiRequestLog', function () {
         });
 
         it('casts response_status to integer', function () {
-            $log = new ApiRequestLog();
+            $log = new ApiRequestLog;
             $log->response_status = '200';
 
             expect($log->response_status)->toBe(200);
         });
 
         it('casts created_at to datetime', function () {
-            $log = new ApiRequestLog();
+            $log = new ApiRequestLog;
             $log->created_at = '2024-01-01 12:00:00';
 
             expect($log->created_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
@@ -59,7 +59,7 @@ describe('ApiRequestLog', function () {
 
     describe('hidden attributes', function () {
         it('hides company_id in array', function () {
-            $log = new ApiRequestLog();
+            $log = new ApiRequestLog;
             $log->company_id = 123;
             $log->client_id = 'test-client';
 

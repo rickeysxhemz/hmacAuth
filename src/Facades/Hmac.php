@@ -6,10 +6,6 @@ namespace HmacAuth\Facades;
 
 use HmacAuth\DTOs\VerificationResult;
 use HmacAuth\Models\ApiCredential;
-use HmacAuth\Services\ApiCredentialService;
-use HmacAuth\Services\HmacVerificationService;
-use HmacAuth\Services\SecureKeyGenerator;
-use HmacAuth\Services\SignatureService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Facade;
 

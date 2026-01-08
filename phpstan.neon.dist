@@ -1,0 +1,16 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - src
+    level: 8
+    ignoreErrors:
+        # Laravel model scopes and relationships generic type hints - these are standard Laravel patterns
+        - '#Method .+::scope.+\(\) has parameter \$query with generic class .+ but does not specify its types#'
+        - '#return type with generic class Illuminate\\Database\\Eloquent\\Relations\\(BelongsTo|HasMany|HasOne|BelongsToMany|MorphTo|MorphMany|MorphOne|MorphToMany|MorphedByMany) does not specify its types#'
+        - '#Unable to resolve the template type TRelatedModel in call to method .+::belongsTo\(\)#'
+        - '#Parameter .+ of method .+::belongsTo\(\) expects class-string.+, string given#'
+        # Redundant type check that's actually intentional for defensive programming
+        - '#Call to function is_string\(\) with string will always evaluate to true#'
+    reportUnmatchedIgnoredErrors: false

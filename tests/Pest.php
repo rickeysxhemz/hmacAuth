@@ -44,7 +44,7 @@ expect()->extend('toBeValidHmacSignature', function () {
 
 expect()->extend('toBeValidClientId', function (string $prefix = 'hmac') {
     return $this->toBeString()
-        ->and($this->value)->toStartWith($prefix . '_');
+        ->and($this->value)->toStartWith($prefix.'_');
 });
 
 /*
@@ -92,10 +92,11 @@ function createValidHmacHeaders(
 function generateTestSecret(int $length = 48): string
 {
     $bytes = random_bytes($length);
+
     return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($bytes));
 }
 
 function generateTestClientId(string $prefix = 'hmac'): string
 {
-    return $prefix . '_' . bin2hex(random_bytes(16));
+    return $prefix.'_'.bin2hex(random_bytes(16));
 }

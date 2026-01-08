@@ -195,6 +195,18 @@ final readonly class ApiRequestLogRepository implements ApiRequestLogRepositoryI
     }
 
     /**
+     * Count logs older than specified days.
+     */
+    public function countOlderThan(int $days): int
+    {
+        $cutoffDate = now()->subDays($days);
+
+        return $this->query()
+            ->where('created_at', '<', $cutoffDate)
+            ->count();
+    }
+
+    /**
      * Delete old logs in chunks using ID-based batching.
      *
      * Octane-safe: Uses primitive arrays instead of Collections to prevent memory leaks.
