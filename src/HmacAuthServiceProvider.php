@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace HmacAuth;
 
+use HmacAuth\Console\Commands\CleanupLogsCommand;
+use HmacAuth\Console\Commands\GenerateCredentialsCommand;
+use HmacAuth\Console\Commands\InstallCommand;
+use HmacAuth\Console\Commands\RotateSecretCommand;
 use HmacAuth\Contracts\ApiCredentialRepositoryInterface;
 use HmacAuth\Contracts\ApiRequestLogRepositoryInterface;
+use HmacAuth\Contracts\HmacVerifierInterface;
 use HmacAuth\Contracts\KeyGeneratorInterface;
 use HmacAuth\Contracts\NonceStoreInterface;
 use HmacAuth\Contracts\RateLimiterInterface;
@@ -24,6 +29,7 @@ use HmacAuth\Services\RateLimiterService;
 use HmacAuth\Services\RequestLogger;
 use HmacAuth\Services\SecureKeyGenerator;
 use HmacAuth\Services\SignatureService;
+use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Redis;
@@ -43,6 +49,7 @@ final class HmacAuthServiceProvider extends ServiceProvider
     public array $bindings = [
         ApiCredentialRepositoryInterface::class => ApiCredentialRepository::class,
         ApiRequestLogRepositoryInterface::class => ApiRequestLogRepository::class,
+        HmacVerifierInterface::class => HmacVerificationService::class,
         KeyGeneratorInterface::class => SecureKeyGenerator::class,
         RateLimiterInterface::class => RateLimiterService::class,
         RequestLoggerInterface::class => RequestLogger::class,
@@ -86,6 +93,16 @@ final class HmacAuthServiceProvider extends ServiceProvider
         }
 
         $this->app->bind(NonceStoreInterface::class, NonceStore::class);
+
+        // Register the HmacManager for the Facade
+        $this->app->singleton('hmac', function ($app): HmacManager {
+            return new HmacManager(
+                $app->make(HmacVerificationService::class),
+                $app->make(SignatureService::class),
+                $app->make(ApiCredentialService::class),
+                $app->make(SecureKeyGenerator::class),
+            );
+        });
     }
 
     public function boot(): void
@@ -95,9 +112,14 @@ final class HmacAuthServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->registerPublishing();
+            $this->registerCommands();
         }
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'hmac-auth');
+        $this->loadTranslationsFrom(__DIR__.'/../lang', 'hmac');
+
+        // Register package info with About command
+        $this->registerAboutCommand();
     }
 
     private function registerMiddleware(): void
@@ -117,10 +139,9 @@ final class HmacAuthServiceProvider extends ServiceProvider
             __DIR__.'/../config/hmac.php' => config_path('hmac.php'),
         ], 'hmac-config');
 
-        // Publish migrations
-        $this->publishes([
-            __DIR__.'/../database/migrations/create_api_credentials_table.php.stub' => database_path('migrations/'.date('Y_m_d_His', time()).'_create_api_credentials_table.php'),
-            __DIR__.'/../database/migrations/create_api_request_logs_table.php.stub' => database_path('migrations/'.date('Y_m_d_His', time() + 1).'_create_api_request_logs_table.php'),
+        // Publish migrations using publishesMigrations for Laravel 12+
+        $this->publishesMigrations([
+            __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'hmac-migrations');
 
         // Publish views
@@ -133,11 +154,37 @@ final class HmacAuthServiceProvider extends ServiceProvider
             __DIR__.'/../resources/css' => public_path('vendor/hmac-auth/css'),
         ], 'hmac-assets');
 
+        // Publish language files
+        $this->publishes([
+            __DIR__.'/../lang' => $this->app->langPath('vendor/hmac'),
+        ], 'hmac-lang');
+
         // Publish all assets together
         $this->publishes([
             __DIR__.'/../config/hmac.php' => config_path('hmac.php'),
             __DIR__.'/../resources/views' => resource_path('views/vendor/hmac-auth'),
             __DIR__.'/../resources/css' => public_path('vendor/hmac-auth/css'),
         ], 'hmac-auth');
+    }
+
+    private function registerCommands(): void
+    {
+        $this->commands([
+            InstallCommand::class,
+            GenerateCredentialsCommand::class,
+            RotateSecretCommand::class,
+            CleanupLogsCommand::class,
+        ]);
+    }
+
+    private function registerAboutCommand(): void
+    {
+        AboutCommand::add('HMAC Auth', fn () => [
+            'Version' => '1.0.0',
+            'Algorithm' => config('hmac.algorithm', 'sha256'),
+            'Enabled' => config('hmac.enabled', true) ? '<fg=green;options=bold>YES</>' : '<fg=red;options=bold>NO</>',
+            'Rate Limiting' => config('hmac.rate_limit.enabled', true) ? '<fg=green;options=bold>YES</>' : '<fg=red;options=bold>NO</>',
+            'Environment Enforcement' => config('hmac.enforce_environment', true) ? '<fg=green;options=bold>YES</>' : '<fg=red;options=bold>NO</>',
+        ]);
     }
 }

@@ -11,7 +11,7 @@ use HmacAuth\Enums\VerificationFailureReason;
 use HmacAuth\Events\AuthenticationFailed;
 use HmacAuth\Events\AuthenticationSucceeded;
 use HmacAuth\Models\ApiCredential;
-use HmacAuth\Services\HmacVerificationService;
+use HmacAuth\Contracts\HmacVerifierInterface;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
 final readonly class VerifyHmacSignature
 {
     public function __construct(
-        private HmacVerificationService $verificationService,
+        private HmacVerifierInterface $verificationService,
         private HmacConfig $config,
     ) {}
 

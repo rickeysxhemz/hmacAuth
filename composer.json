@@ -28,7 +28,8 @@
     },
     "require-dev": {
         "orchestra/testbench": "^9.0|^10.0",
-        "phpunit/phpunit": "^11.0"
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-laravel": "^3.0"
     },
     "autoload": {
         "psr-4": {
@@ -44,11 +45,21 @@
         "laravel": {
             "providers": [
                 "HmacAuth\\HmacAuthServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "Hmac": "HmacAuth\\Facades\\Hmac"
+            }
         }
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "test": "pest",
+        "test-coverage": "pest --coverage --min=90"
     },
     "minimum-stability": "stable",
     "prefer-stable": true

@@ -6,6 +6,7 @@ namespace HmacAuth\Services;
 
 use HmacAuth\Concerns\ValidatesHmacHeaders;
 use HmacAuth\Contracts\ApiCredentialRepositoryInterface;
+use HmacAuth\Contracts\HmacVerifierInterface;
 use HmacAuth\Contracts\NonceStoreInterface;
 use HmacAuth\Contracts\RateLimiterInterface;
 use HmacAuth\Contracts\RequestLoggerInterface;
@@ -21,7 +22,7 @@ use Illuminate\Http\Request;
 /**
  * HMAC signature verification service.
  */
-final readonly class HmacVerificationService
+final readonly class HmacVerificationService implements HmacVerifierInterface
 {
     use ValidatesHmacHeaders;
 
