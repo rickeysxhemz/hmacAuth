@@ -1,271 +1,83 @@
 # Configuration
 
-Complete reference for `config/hmac.php` settings.
-
-## Publishing Configuration
+Reference for `config/hmac.php`.
 
 ```bash
 php artisan vendor:publish --tag=hmac-config
 ```
 
-## Configuration Options
+## Options
 
-### General Settings
+### General
 
-#### `enabled`
+| Option | Default | Env | Description |
+|--------|---------|-----|-------------|
+| `enabled` | `true` | `HMAC_ENABLED` | Enable HMAC authentication |
+| `algorithm` | `sha256` | `HMAC_ALGORITHM` | Hash algorithm (`sha256`, `sha384`, `sha512`) |
 
-Enable or disable HMAC authentication globally.
+### Timing
 
-```php
-'enabled' => env('HMAC_ENABLED', true),
-```
+| Option | Default | Env | Description |
+|--------|---------|-----|-------------|
+| `timestamp_tolerance` | `300` | `HMAC_TIMESTAMP_TOLERANCE` | Max request age in seconds |
+| `nonce_ttl` | `600` | `HMAC_NONCE_TTL` | Nonce storage duration (should be 2x tolerance) |
+| `min_nonce_length` | `16` | `HMAC_MIN_NONCE_LENGTH` | Minimum nonce length |
 
-- **Type**: `bool`
-- **Default**: `true`
-- **Environment**: `HMAC_ENABLED`
+### Limits
 
-When disabled, the middleware passes all requests through without verification.
-
----
-
-#### `algorithm`
-
-Default HMAC algorithm for new credentials.
-
-```php
-'algorithm' => env('HMAC_ALGORITHM', 'sha256'),
-```
-
-- **Type**: `string`
-- **Default**: `'sha256'`
-- **Options**: `'sha256'`, `'sha384'`, `'sha512'`
-- **Environment**: `HMAC_ALGORITHM`
-
-Individual credentials can override this with their own algorithm setting.
-
----
-
-### Timestamp Settings
-
-#### `timestamp_tolerance`
-
-Maximum age (in seconds) for request timestamps.
-
-```php
-'timestamp_tolerance' => env('HMAC_TIMESTAMP_TOLERANCE', 300),
-```
-
-- **Type**: `int`
-- **Default**: `300` (5 minutes)
-- **Environment**: `HMAC_TIMESTAMP_TOLERANCE`
-
-Requests with timestamps older than this are rejected. Balance security (shorter) with clock drift tolerance (longer).
-
----
-
-### Nonce Settings
-
-#### `nonce_ttl`
-
-How long (in seconds) nonces are stored to prevent replay attacks.
-
-```php
-'nonce_ttl' => env('HMAC_NONCE_TTL', 600),
-```
-
-- **Type**: `int`
-- **Default**: `600` (10 minutes)
-- **Environment**: `HMAC_NONCE_TTL`
-
-Should be at least double the `timestamp_tolerance` to ensure nonces outlive valid timestamps.
-
----
-
-#### `min_nonce_length`
-
-Minimum required length for nonces.
-
-```php
-'min_nonce_length' => env('HMAC_MIN_NONCE_LENGTH', 16),
-```
-
-- **Type**: `int`
-- **Default**: `16`
-- **Environment**: `HMAC_MIN_NONCE_LENGTH`
-
-Shorter nonces are rejected as a security measure.
-
----
-
-### Body Size Limits
-
-#### `max_body_size`
-
-Maximum request body size (in bytes) that will be processed.
-
-```php
-'max_body_size' => env('HMAC_MAX_BODY_SIZE', 1048576),
-```
-
-- **Type**: `int`
-- **Default**: `1048576` (1 MB)
-- **Environment**: `HMAC_MAX_BODY_SIZE`
-
-Requests with larger bodies are rejected. Adjust based on your API's needs.
-
----
+| Option | Default | Env | Description |
+|--------|---------|-----|-------------|
+| `max_body_size` | `1048576` | `HMAC_MAX_BODY_SIZE` | Max body size in bytes (1 MB) |
 
 ### Rate Limiting
 
-#### `rate_limit_max_attempts`
-
-Maximum failed authentication attempts before rate limiting kicks in.
-
-```php
-'rate_limit_max_attempts' => env('HMAC_RATE_LIMIT_MAX_ATTEMPTS', 5),
-```
-
-- **Type**: `int`
-- **Default**: `5`
-- **Environment**: `HMAC_RATE_LIMIT_MAX_ATTEMPTS`
-
----
-
-#### `rate_limit_decay_seconds`
-
-Time window (in seconds) for rate limit tracking.
-
-```php
-'rate_limit_decay_seconds' => env('HMAC_RATE_LIMIT_DECAY_SECONDS', 60),
-```
-
-- **Type**: `int`
-- **Default**: `60` (1 minute)
-- **Environment**: `HMAC_RATE_LIMIT_DECAY_SECONDS`
-
-After this period without failures, the failure count resets.
-
----
+| Option | Default | Env | Description |
+|--------|---------|-----|-------------|
+| `rate_limit_max_attempts` | `5` | `HMAC_RATE_LIMIT_MAX_ATTEMPTS` | Failed attempts before limiting |
+| `rate_limit_decay_seconds` | `60` | `HMAC_RATE_LIMIT_DECAY_SECONDS` | Reset window in seconds |
 
 ### IP Blocking
 
-#### `ip_blocking_threshold`
+| Option | Default | Env | Description |
+|--------|---------|-----|-------------|
+| `ip_blocking_threshold` | `10` | `HMAC_IP_BLOCKING_THRESHOLD` | Failed attempts before blocking |
+| `ip_blocking_duration` | `3600` | `HMAC_IP_BLOCKING_DURATION` | Block duration in seconds (1 hour) |
 
-Number of failed attempts from an IP before blocking.
+### Environment
 
-```php
-'ip_blocking_threshold' => env('HMAC_IP_BLOCKING_THRESHOLD', 10),
-```
+| Option | Default | Env | Description |
+|--------|---------|-----|-------------|
+| `enforce_environment` | `true` | `HMAC_ENFORCE_ENVIRONMENT` | Require credential/app environment match |
 
-- **Type**: `int`
-- **Default**: `10`
-- **Environment**: `HMAC_IP_BLOCKING_THRESHOLD`
+### Redis
 
----
+| Option | Default | Env | Description |
+|--------|---------|-----|-------------|
+| `redis.connection` | `default` | `HMAC_REDIS_CONNECTION` | Connection name from `database.php` |
+| `redis.prefix` | `hmac:` | `HMAC_REDIS_PREFIX` | Key prefix |
 
-#### `ip_blocking_duration`
+### Headers
 
-How long (in seconds) an IP remains blocked.
+| Option | Default | Env |
+|--------|---------|-----|
+| `headers.api_key` | `X-Api-Key` | `HMAC_HEADER_API_KEY` |
+| `headers.signature` | `X-Signature` | `HMAC_HEADER_SIGNATURE` |
+| `headers.timestamp` | `X-Timestamp` | `HMAC_HEADER_TIMESTAMP` |
+| `headers.nonce` | `X-Nonce` | `HMAC_HEADER_NONCE` |
 
-```php
-'ip_blocking_duration' => env('HMAC_IP_BLOCKING_DURATION', 3600),
-```
+### Multi-Tenancy
 
-- **Type**: `int`
-- **Default**: `3600` (1 hour)
-- **Environment**: `HMAC_IP_BLOCKING_DURATION`
+| Option | Default | Env | Description |
+|--------|---------|-----|-------------|
+| `tenancy.enabled` | `false` | `HMAC_TENANCY_ENABLED` | Enable tenant scoping |
+| `tenancy.column` | `tenant_id` | `HMAC_TENANT_COLUMN` | Foreign key column name |
+| `tenancy.model` | `App\Models\Tenant` | `HMAC_TENANT_MODEL` | Tenant model class |
 
----
+### Models
 
-### Environment Enforcement
-
-#### `enforce_environment`
-
-Whether to enforce environment matching between credentials and application.
-
-```php
-'enforce_environment' => env('HMAC_ENFORCE_ENVIRONMENT', true),
-```
-
-- **Type**: `bool`
-- **Default**: `true`
-- **Environment**: `HMAC_ENFORCE_ENVIRONMENT`
-
-When enabled, production credentials can only be used in production, etc.
-
----
-
-### Redis Configuration
-
-#### `redis.connection`
-
-Redis connection name from `config/database.php`.
-
-```php
-'redis' => [
-    'connection' => env('HMAC_REDIS_CONNECTION', 'default'),
-    'prefix' => env('HMAC_REDIS_PREFIX', 'hmac:'),
-],
-```
-
-- **Type**: `string`
-- **Default**: `'default'`
-- **Environment**: `HMAC_REDIS_CONNECTION`
-
----
-
-#### `redis.prefix`
-
-Prefix for all Redis keys used by HMAC Auth.
-
-```php
-'prefix' => env('HMAC_REDIS_PREFIX', 'hmac:'),
-```
-
-- **Type**: `string`
-- **Default**: `'hmac:'`
-- **Environment**: `HMAC_REDIS_PREFIX`
-
----
-
-### Custom Header Names
-
-#### `headers`
-
-Customize the HTTP header names used for authentication.
-
-```php
-'headers' => [
-    'api_key' => env('HMAC_HEADER_API_KEY', 'X-Api-Key'),
-    'signature' => env('HMAC_HEADER_SIGNATURE', 'X-Signature'),
-    'timestamp' => env('HMAC_HEADER_TIMESTAMP', 'X-Timestamp'),
-    'nonce' => env('HMAC_HEADER_NONCE', 'X-Nonce'),
-],
-```
-
-| Header | Default | Environment |
-|--------|---------|-------------|
-| API Key | `X-Api-Key` | `HMAC_HEADER_API_KEY` |
-| Signature | `X-Signature` | `HMAC_HEADER_SIGNATURE` |
-| Timestamp | `X-Timestamp` | `HMAC_HEADER_TIMESTAMP` |
-| Nonce | `X-Nonce` | `HMAC_HEADER_NONCE` |
-
----
-
-### Model Configuration
-
-#### `models`
-
-Customize the Eloquent models used by the package.
-
-```php
-'models' => [
-    'api_credential' => \HmacAuth\Models\ApiCredential::class,
-    'api_request_log' => \HmacAuth\Models\ApiRequestLog::class,
-],
-```
-
-Override these if you need to extend the default models with custom functionality.
+| Option | Default | Env | Description |
+|--------|---------|-----|-------------|
+| `models.user` | `App\Models\User` | `HMAC_USER_MODEL` | User model class |
 
 ---
 
@@ -315,39 +127,51 @@ Or in `phpunit.xml`:
 <?php
 
 return [
-    'enabled' => env('HMAC_ENABLED', true),
+    'enabled' => env('HMAC_AUTH_ENABLED', true),
     'algorithm' => env('HMAC_ALGORITHM', 'sha256'),
 
     'timestamp_tolerance' => env('HMAC_TIMESTAMP_TOLERANCE', 300),
 
     'nonce_ttl' => env('HMAC_NONCE_TTL', 600),
-    'min_nonce_length' => env('HMAC_MIN_NONCE_LENGTH', 16),
+    'min_nonce_length' => env('HMAC_MIN_NONCE_LENGTH', 32),
 
     'max_body_size' => env('HMAC_MAX_BODY_SIZE', 1048576),
 
-    'rate_limit_max_attempts' => env('HMAC_RATE_LIMIT_MAX_ATTEMPTS', 5),
-    'rate_limit_decay_seconds' => env('HMAC_RATE_LIMIT_DECAY_SECONDS', 60),
-
-    'ip_blocking_threshold' => env('HMAC_IP_BLOCKING_THRESHOLD', 10),
-    'ip_blocking_duration' => env('HMAC_IP_BLOCKING_DURATION', 3600),
-
     'enforce_environment' => env('HMAC_ENFORCE_ENVIRONMENT', true),
+
+    'rate_limit' => [
+        'enabled' => env('HMAC_RATE_LIMIT_ENABLED', true),
+        'max_attempts' => env('HMAC_RATE_LIMIT_ATTEMPTS', 60),
+        'decay_minutes' => env('HMAC_RATE_LIMIT_DECAY', 1),
+    ],
+
+    'ip_blocking' => [
+        'enabled' => env('HMAC_IP_BLOCKING_ENABLED', true),
+        'threshold' => env('HMAC_IP_FAILURE_THRESHOLD', 10),
+        'window_minutes' => env('HMAC_IP_FAILURE_WINDOW', 10),
+    ],
 
     'redis' => [
         'connection' => env('HMAC_REDIS_CONNECTION', 'default'),
         'prefix' => env('HMAC_REDIS_PREFIX', 'hmac:'),
+        'fail_on_error' => env('HMAC_REDIS_STRICT', false),
     ],
 
     'headers' => [
-        'api_key' => env('HMAC_HEADER_API_KEY', 'X-Api-Key'),
-        'signature' => env('HMAC_HEADER_SIGNATURE', 'X-Signature'),
-        'timestamp' => env('HMAC_HEADER_TIMESTAMP', 'X-Timestamp'),
-        'nonce' => env('HMAC_HEADER_NONCE', 'X-Nonce'),
+        'api-key' => 'X-Api-Key',
+        'signature' => 'X-Signature',
+        'timestamp' => 'X-Timestamp',
+        'nonce' => 'X-Nonce',
+    ],
+
+    'tenancy' => [
+        'enabled' => env('HMAC_TENANCY_ENABLED', false),
+        'column' => env('HMAC_TENANT_COLUMN', 'tenant_id'),
+        'model' => env('HMAC_TENANT_MODEL', 'App\\Models\\Tenant'),
     ],
 
     'models' => [
-        'api_credential' => \HmacAuth\Models\ApiCredential::class,
-        'api_request_log' => \HmacAuth\Models\ApiRequestLog::class,
+        'user' => env('HMAC_USER_MODEL', 'App\\Models\\User'),
     ],
 ];
 ```

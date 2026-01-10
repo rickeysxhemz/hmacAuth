@@ -41,9 +41,7 @@ use Illuminate\Support\Facades\Log;
 class ApiCredential extends Model
 {
     use HasTenantScoping;
-    /**
-     * Valid environment values for API credentials.
-     */
+
     public const string ENVIRONMENT_PRODUCTION = 'production';
 
     public const string ENVIRONMENT_TESTING = 'testing';
@@ -83,18 +81,11 @@ class ApiCredential extends Model
         'old_client_secret',
     ];
 
-    /**
-     * Automatically encrypt client_secret when setting
-     */
     protected function setClientSecretAttribute(string $value): void
     {
         $this->attributes['client_secret'] = Crypt::encryptString($value);
     }
 
-    /**
-     * Automatically decrypt client_secret when getting
-     * Returns null if decryption fails (e.g., APP_KEY changed)
-     */
     protected function getClientSecretAttribute(?string $value): ?string
     {
         if ($value === null) {
@@ -114,18 +105,11 @@ class ApiCredential extends Model
         }
     }
 
-    /**
-     * Automatically encrypt old_client_secret when setting
-     */
     protected function setOldClientSecretAttribute(?string $value): void
     {
         $this->attributes['old_client_secret'] = $value !== null ? Crypt::encryptString($value) : null;
     }
 
-    /**
-     * Automatically decrypt old_client_secret when getting
-     * Returns null if decryption fails (e.g., APP_KEY changed)
-     */
     protected function getOldClientSecretAttribute(?string $value): ?string
     {
         if ($value === null) {
@@ -144,9 +128,6 @@ class ApiCredential extends Model
         }
     }
 
-    /**
-     * Scope: Get only active credentials
-     */
     protected function scopeActive(Builder $query): void
     {
         $query->where('is_active', true)
@@ -156,17 +137,11 @@ class ApiCredential extends Model
             });
     }
 
-    /**
-     * Scope: Filter by environment
-     */
     protected function scopeForEnvironment(Builder $query, string $environment): void
     {
         $query->where('environment', $environment);
     }
 
-    /**
-     * Scope: Get expired credentials (past expiration but still marked active)
-     */
     protected function scopeExpired(Builder $query): void
     {
         $query->whereNotNull('expires_at')
@@ -174,9 +149,6 @@ class ApiCredential extends Model
             ->where('is_active', true);
     }
 
-    /**
-     * Scope: Get credentials expiring within specified days
-     */
     protected function scopeExpiringSoon(Builder $query, int $days = 7): void
     {
         $now = now();
@@ -186,9 +158,6 @@ class ApiCredential extends Model
             ->where('is_active', true);
     }
 
-    /**
-     * Scope: Eager load default relations
-     */
     protected function scopeWithDefaultRelations(Builder $query): void
     {
         $relations = ['creator'];
@@ -200,9 +169,6 @@ class ApiCredential extends Model
         $query->with($relations);
     }
 
-    /**
-     * Scope: Search by client ID or company name
-     */
     protected function scopeSearchByTerm(Builder $query, string $term): void
     {
         $escapedTerm = addcslashes($term, '%_\\');
@@ -212,17 +178,11 @@ class ApiCredential extends Model
         });
     }
 
-    /**
-     * Check if environment value is valid
-     */
     public static function isValidEnvironment(string $environment): bool
     {
         return in_array($environment, self::VALID_ENVIRONMENTS, true);
     }
 
-    /**
-     * Check if credential matches the current application environment
-     */
     public function matchesCurrentEnvironment(): bool
     {
         /** @var string $appEnv */
@@ -231,9 +191,6 @@ class ApiCredential extends Model
         return $this->matchesEnvironment($appEnv);
     }
 
-    /**
-     * Check if credential matches the given application environment
-     */
     public function matchesEnvironment(string $appEnv): bool
     {
         $expectedCredentialEnv = $appEnv === 'production'
@@ -243,42 +200,27 @@ class ApiCredential extends Model
         return $this->environment === $expectedCredentialEnv;
     }
 
-    /**
-     * Check if credential is for production
-     */
     public function isProduction(): bool
     {
         return $this->environment === self::ENVIRONMENT_PRODUCTION;
     }
 
-    /**
-     * Check if credential is for testing
-     */
     public function isTesting(): bool
     {
         return $this->environment === self::ENVIRONMENT_TESTING;
     }
 
-    /**
-     * Check if credential is expired
-     */
     public function isExpired(): bool
     {
         return $this->expires_at !== null && $this->expires_at->isPast();
     }
 
-    /**
-     * Check if credential is valid (active and not expired)
-     */
     public function isValid(): bool
     {
         return $this->is_active && ! $this->isExpired();
     }
 
-    /**
-     * Verify secret against stored encrypted secret (for secret rotation)
-     * Uses constant-time comparison to prevent timing attacks
-     */
+    /** Uses constant-time comparison to prevent timing attacks. */
     public function verifySecret(string $secret): bool
     {
         // Check the current secret (decrypted automatically)
@@ -296,26 +238,17 @@ class ApiCredential extends Model
         return false;
     }
 
-    /**
-     * Update last used timestamp
-     */
     public function markAsUsed(): void
     {
         $this->update(['last_used_at' => now()]);
     }
 
-    /**
-     * Get the user model class from config.
-     */
     protected function getUserModelClass(): string
     {
         /** @var string */
         return config('hmac.models.user', 'App\\Models\\User');
     }
 
-    /**
-     * Relationships
-     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo($this->getUserModelClass(), 'created_by');

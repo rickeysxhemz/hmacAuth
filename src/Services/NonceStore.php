@@ -10,10 +10,8 @@ use HmacAuth\DTOs\HmacConfig;
 use HmacAuth\Exceptions\NonceValidationException;
 use Illuminate\Redis\Connections\Connection;
 use RuntimeException;
+use Throwable;
 
-/**
- * Redis-based nonce storage to prevent replay attacks.
- */
 final readonly class NonceStore implements NonceStoreInterface
 {
     use RedisStoreConcerns;
@@ -29,8 +27,7 @@ final readonly class NonceStore implements NonceStoreInterface
 
     public function exists(string $nonce): bool
     {
-        // In testing mode (no Redis), always return false
-        if ($this->redis === null) {
+        if ($this->isTestingMode()) {
             return false;
         }
 
@@ -53,8 +50,7 @@ final readonly class NonceStore implements NonceStoreInterface
 
     public function store(string $nonce): void
     {
-        // In testing mode (no Redis), skip storage
-        if ($this->redis === null) {
+        if ($this->isTestingMode()) {
             return;
         }
 
@@ -68,27 +64,14 @@ final readonly class NonceStore implements NonceStoreInterface
         );
     }
 
-    protected function shouldFailOnRedisError(): bool
-    {
-        return $this->config->failOnRedisError;
-    }
-
-    private function getKey(string $nonce): string
-    {
-        return $this->prefix.hash('xxh3', $nonce);
-    }
-
-    /**
-     * @throws RuntimeException if called in production
-     */
+    /** @throws RuntimeException|Throwable if called in production */
     public function clear(): void
     {
         if ($this->config->isProduction()) {
             throw new RuntimeException('NonceStore::clear() cannot be called in production');
         }
 
-        // In testing mode (no Redis), nothing to clear
-        if ($this->redis === null) {
+        if ($this->isTestingMode()) {
             return;
         }
 
@@ -101,12 +84,28 @@ final readonly class NonceStore implements NonceStoreInterface
             return;
         }
 
-        /** @var string $redisPrefix */
-        $redisPrefix = config('database.redis.options.prefix', '');
+        $redisPrefix = $this->config->databaseRedisPrefix;
 
         foreach ($keys as $fullKey) {
-            $shortKey = $redisPrefix !== '' ? str_replace($redisPrefix, '', $fullKey) : $fullKey;
+            $shortKey = $redisPrefix !== '' && str_starts_with($fullKey, $redisPrefix)
+                ? substr($fullKey, strlen($redisPrefix))
+                : $fullKey;
             $this->redis->command('del', [$shortKey]);
         }
+    }
+
+    protected function shouldFailOnRedisError(): bool
+    {
+        return $this->config->failOnRedisError;
+    }
+
+    private function isTestingMode(): bool
+    {
+        return $this->redis === null;
+    }
+
+    private function getKey(string $nonce): string
+    {
+        return $this->prefix.hash('xxh3', $nonce);
     }
 }

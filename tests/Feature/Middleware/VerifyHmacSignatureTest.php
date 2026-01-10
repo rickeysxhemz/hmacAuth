@@ -10,6 +10,7 @@ use HmacAuth\Events\AuthenticationFailed;
 use HmacAuth\Events\AuthenticationSucceeded;
 use HmacAuth\Http\Middleware\VerifyHmacSignature;
 use HmacAuth\Models\ApiCredential;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 
@@ -34,6 +35,10 @@ function createMiddlewareConfig(array $overrides = []): HmacConfig
         nonceTtl: 600,
         maxBodySize: 1048576,
         minNonceLength: 32,
+        tenancyEnabled: $overrides['tenancyEnabled'] ?? false,
+        tenancyColumn: $overrides['tenancyColumn'] ?? 'tenant_id',
+        tenancyModel: 'App\\Models\\Tenant',
+        databaseRedisPrefix: '',
     );
 }
 
@@ -41,12 +46,14 @@ describe('VerifyHmacSignature Middleware', function () {
     beforeEach(function () {
         Event::fake();
         $this->verificationService = Mockery::mock(HmacVerifierInterface::class);
+        $this->dispatcher = Mockery::mock(Dispatcher::class);
+        $this->dispatcher->shouldReceive('dispatch')->andReturn(null);
     });
 
     describe('when HMAC is disabled', function () {
         it('passes request through without verification', function () {
             $config = createMiddlewareConfig(['enabled' => false]);
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $this->dispatcher);
 
             $request = Request::create('/api/test', 'GET');
             $called = false;
@@ -63,7 +70,7 @@ describe('VerifyHmacSignature Middleware', function () {
 
         it('does not call verification service', function () {
             $config = createMiddlewareConfig(['enabled' => false]);
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $this->dispatcher);
 
             $this->verificationService->shouldNotReceive('verify');
 
@@ -78,7 +85,7 @@ describe('VerifyHmacSignature Middleware', function () {
     describe('when verification succeeds', function () {
         it('allows request to proceed', function () {
             $config = createMiddlewareConfig();
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $this->dispatcher);
 
             $credential = Mockery::mock(ApiCredential::class)->makePartial();
 
@@ -104,7 +111,7 @@ describe('VerifyHmacSignature Middleware', function () {
 
         it('sets hmac_credential attribute on request', function () {
             $config = createMiddlewareConfig();
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $this->dispatcher);
 
             $credential = Mockery::mock(ApiCredential::class)->makePartial();
 
@@ -127,14 +134,12 @@ describe('VerifyHmacSignature Middleware', function () {
         });
 
         it('sets tenant_id attribute on request when tenancy enabled', function () {
-            config(['hmac.tenancy.enabled' => true]);
-            config(['hmac.tenancy.column' => 'tenant_id']);
-
-            $config = createMiddlewareConfig();
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $config = createMiddlewareConfig(['tenancyEnabled' => true, 'tenancyColumn' => 'tenant_id']);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $this->dispatcher);
 
             $credential = Mockery::mock(ApiCredential::class)->makePartial();
-            $credential->tenant_id = 456;
+            $credential->shouldReceive('getAttribute')->with('tenant_id')->andReturn(456);
+            $credential->shouldReceive('offsetExists')->with('tenant_id')->andReturn(true);
 
             $result = VerificationResult::success($credential);
 
@@ -152,16 +157,11 @@ describe('VerifyHmacSignature Middleware', function () {
             });
 
             expect($capturedTenantId)->toBe(456);
-
-            // Reset config
-            config(['hmac.tenancy.enabled' => false]);
         });
 
         it('does not set tenant_id when tenancy disabled', function () {
-            config(['hmac.tenancy.enabled' => false]);
-
-            $config = createMiddlewareConfig();
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $config = createMiddlewareConfig(['tenancyEnabled' => false]);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $this->dispatcher);
 
             $credential = Mockery::mock(ApiCredential::class)->makePartial();
 
@@ -184,8 +184,13 @@ describe('VerifyHmacSignature Middleware', function () {
         });
 
         it('dispatches AuthenticationSucceeded event', function () {
+            $dispatcher = Mockery::mock(Dispatcher::class);
+            $dispatcher->shouldReceive('dispatch')
+                ->once()
+                ->with(Mockery::type(AuthenticationSucceeded::class));
+
             $config = createMiddlewareConfig();
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $dispatcher);
 
             $credential = Mockery::mock(ApiCredential::class)->makePartial();
 
@@ -200,15 +205,13 @@ describe('VerifyHmacSignature Middleware', function () {
             $middleware->handle($request, function () {
                 return response()->json(['success' => true]);
             });
-
-            Event::assertDispatched(AuthenticationSucceeded::class);
         });
     });
 
     describe('when verification fails', function () {
         it('returns 401 for invalid signature', function () {
             $config = createMiddlewareConfig();
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $this->dispatcher);
 
             $result = VerificationResult::failure(VerificationFailureReason::INVALID_SIGNATURE);
 
@@ -228,7 +231,7 @@ describe('VerifyHmacSignature Middleware', function () {
 
         it('returns 429 for rate limited', function () {
             $config = createMiddlewareConfig();
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $this->dispatcher);
 
             $result = VerificationResult::failure(VerificationFailureReason::RATE_LIMITED);
 
@@ -248,7 +251,7 @@ describe('VerifyHmacSignature Middleware', function () {
 
         it('returns 413 for body too large', function () {
             $config = createMiddlewareConfig();
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $this->dispatcher);
 
             $result = VerificationResult::failure(VerificationFailureReason::BODY_TOO_LARGE);
 
@@ -267,7 +270,7 @@ describe('VerifyHmacSignature Middleware', function () {
 
         it('returns JSON error response', function () {
             $config = createMiddlewareConfig();
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $this->dispatcher);
 
             $result = VerificationResult::failure(VerificationFailureReason::MISSING_HEADERS);
 
@@ -291,8 +294,13 @@ describe('VerifyHmacSignature Middleware', function () {
         });
 
         it('dispatches AuthenticationFailed event', function () {
+            $dispatcher = Mockery::mock(Dispatcher::class);
+            $dispatcher->shouldReceive('dispatch')
+                ->once()
+                ->with(Mockery::type(AuthenticationFailed::class));
+
             $config = createMiddlewareConfig();
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $dispatcher);
 
             $result = VerificationResult::failure(VerificationFailureReason::INVALID_CLIENT_ID);
 
@@ -306,13 +314,11 @@ describe('VerifyHmacSignature Middleware', function () {
             $middleware->handle($request, function () {
                 return response()->json(['success' => true]);
             });
-
-            Event::assertDispatched(AuthenticationFailed::class);
         });
 
         it('does not call next middleware on failure', function () {
             $config = createMiddlewareConfig();
-            $middleware = new VerifyHmacSignature($this->verificationService, $config);
+            $middleware = new VerifyHmacSignature($this->verificationService, $config, $this->dispatcher);
 
             $result = VerificationResult::failure(VerificationFailureReason::INVALID_SIGNATURE);
 

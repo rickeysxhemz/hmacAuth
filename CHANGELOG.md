@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `HmacConfig`: Added tenancy properties (`tenancyEnabled`, `tenancyColumn`, `tenancyModel`, `databaseRedisPrefix`)
+- `VerifyHmacSignature`: Injected `Dispatcher`, uses `HmacConfig` for tenancy
+- `NonceStore`: Fixed prefix stripping bug, extracted `isTestingMode()`
+- `EncodesBase64Url`: `base64UrlDecode()` returns `string|false`
+- `HasTenantScoping`: Fixed infinite recursion in `setTenantIdAttribute()`
+- Removed redundant docblocks from `ApiCredential`
+
+### Fixed
+
+- Stack overflow when setting tenant ID on models
+- Redis prefix stripping could match mid-string
+
 ## [1.0.0] - 2026-01-08
 
 ### Added

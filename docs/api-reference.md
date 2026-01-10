@@ -1,12 +1,8 @@
 # API Reference
 
-Complete reference for services, DTOs, enums, and events provided by the package.
-
 ## Facade
 
 ### `Hmac`
-
-The main entry point for programmatic access.
 
 ```php
 use HmacAuth\Facades\Hmac;
@@ -39,11 +35,7 @@ $nonce = Hmac::generateNonce();
 
 ### `HmacVerificationService`
 
-Main service for verifying HMAC-signed requests.
-
 #### `verify(Request $request): VerificationResult`
-
-Verifies an incoming request's HMAC signature.
 
 ```php
 use HmacAuth\Services\HmacVerificationService;
@@ -64,11 +56,7 @@ if ($result->isValid()) {
 
 ### `SignatureService`
 
-Generates and verifies HMAC signatures.
-
 #### `generate(SignaturePayload $payload, string $secret, string $algorithm = 'sha256'): string`
-
-Generates an HMAC signature for a payload.
 
 ```php
 use HmacAuth\Services\SignatureService;
@@ -88,7 +76,7 @@ $signature = $service->generate($payload, $secret, 'sha256');
 
 #### `verify(string $expected, string $actual): bool`
 
-Compares signatures using timing-safe comparison.
+Timing-safe comparison.
 
 ```php
 $isValid = $service->verify($expectedSignature, $actualSignature);
@@ -96,31 +84,22 @@ $isValid = $service->verify($expectedSignature, $actualSignature);
 
 #### `isAlgorithmSupported(string $algorithm): bool`
 
-Checks if an algorithm is supported.
-
 ```php
-$supported = $service->isAlgorithmSupported('sha512'); // true
-$supported = $service->isAlgorithmSupported('md5');    // false
+$service->isAlgorithmSupported('sha512'); // true
+$service->isAlgorithmSupported('md5');    // false
 ```
 
 #### `getSupportedAlgorithms(): array`
 
-Returns list of supported algorithms.
-
 ```php
-$algorithms = $service->getSupportedAlgorithms();
-// ['sha256', 'sha384', 'sha512']
+$service->getSupportedAlgorithms(); // ['sha256', 'sha384', 'sha512']
 ```
 
 ---
 
 ### `ApiCredentialService`
 
-Manages API credentials.
-
 #### `generate(int $companyId, int $createdBy, string $environment, ?CarbonInterface $expiresAt): array`
-
-Creates new API credentials.
 
 ```php
 use HmacAuth\Services\ApiCredentialService;
@@ -133,13 +112,11 @@ $result = $service->generate(
     expiresAt: now()->addYear()
 );
 
-$credential = $result['credential'];   // ApiCredential model
-$plainSecret = $result['plain_secret']; // Show this to user once!
+$credential = $result['credential'];
+$plainSecret = $result['plain_secret']; // Show once, cannot retrieve later
 ```
 
 #### `rotateSecret(ApiCredential $credential, int $graceDays = 7): array`
-
-Rotates the secret for a credential.
 
 ```php
 $result = $service->rotateSecret($credential, graceDays: 14);
@@ -152,47 +129,32 @@ $oldSecretExpiresAt = $result['old_secret_expires_at'];
 
 ### `SecureKeyGenerator`
 
-Generates cryptographically secure random values.
-
 #### `generateClientId(string $environment): string`
-
-Generates a new client ID with environment prefix.
 
 ```php
 use HmacAuth\Services\SecureKeyGenerator;
 
 $generator = app(SecureKeyGenerator::class);
-$clientId = $generator->generateClientId('production');
-// "prod_a1b2c3d4e5f6g7h8"
+$generator->generateClientId('production'); // "prod_a1b2c3d4e5f6g7h8"
 ```
 
 #### `generateClientSecret(): string`
 
-Generates a new client secret.
-
 ```php
-$secret = $generator->generateClientSecret();
-// 64-character hex string
+$generator->generateClientSecret(); // 64-char hex
 ```
 
 #### `generateNonce(): string`
 
-Generates a new nonce for request signing.
-
 ```php
-$nonce = $generator->generateNonce();
-// 32-character hex string
+$generator->generateNonce(); // 32-char hex
 ```
 
 ---
 
 ### `NonceStore`
 
-Manages nonce storage for replay attack prevention.
-
 #### `exists(string $nonce): bool`
-
-Checks if a nonce has been used.
 
 ```php
 use HmacAuth\Contracts\NonceStoreInterface;
@@ -209,23 +171,22 @@ Stores a nonce to prevent reuse.
 $store->store($nonce);
 ```
 
-#### `clear(string $nonce): void`
+#### `clear(): void`
 
-Removes a nonce from storage.
+Clears all nonces from storage. Only available in non-production environments for testing purposes.
 
 ```php
-$store->clear($nonce);
+// Only in testing/development
+$store->clear();
 ```
+
+> **Warning**: This method throws `RuntimeException` if called in production.
 
 ---
 
 ### `RateLimiterService`
 
-Manages per-client rate limiting.
-
 #### `isLimited(string $clientId): bool`
-
-Checks if a client is rate limited.
 
 ```php
 use HmacAuth\Contracts\RateLimiterInterface;
@@ -236,37 +197,17 @@ $isLimited = $limiter->isLimited($clientId);
 
 #### `recordFailure(string $clientId): void`
 
-Records a failed authentication attempt.
-
-```php
-$limiter->recordFailure($clientId);
-```
-
 #### `reset(string $clientId): void`
-
-Resets the failure count for a client.
-
-```php
-$limiter->reset($clientId);
-```
 
 ---
 
 ### `RequestLogger`
 
-Logs authentication attempts for auditing.
-
 #### `logSuccessfulAttempt(Request $request, ApiCredential $credential): void`
-
-Logs a successful authentication.
 
 #### `logFailedAttempt(Request $request, string $clientId, string $reason, ?ApiCredential $credential): void`
 
-Logs a failed authentication attempt.
-
 #### `hasExcessiveFailures(string $ipAddress): bool`
-
-Checks if an IP has excessive failures and should be blocked.
 
 ---
 
@@ -274,12 +215,9 @@ Checks if an IP has excessive failures and should be blocked.
 
 ### `SignaturePayload`
 
-Represents the data used to generate a signature.
-
 ```php
 use HmacAuth\DTOs\SignaturePayload;
 
-// Create from components
 $payload = new SignaturePayload(
     method: 'POST',
     path: '/api/data',
@@ -288,11 +226,10 @@ $payload = new SignaturePayload(
     nonce: 'unique-nonce'
 );
 
-// Create from a request
+// Or from request
 $payload = SignaturePayload::fromRequest($request, $timestamp, $nonce);
 
-// Get canonical string for signing
-$canonical = $payload->toCanonicalString();
+$payload->toCanonicalString();
 // "POST\n/api/data\n{\"key\":\"value\"}\n1704067200\nunique-nonce"
 ```
 
@@ -300,18 +237,10 @@ $canonical = $payload->toCanonicalString();
 
 ### `VerificationResult`
 
-Represents the outcome of request verification.
-
 ```php
-use HmacAuth\DTOs\VerificationResult;
-
-// Check if valid
 if ($result->isValid()) {
     $credential = $result->getCredential();
-}
-
-// Get failure reason
-if (!$result->isValid()) {
+} else {
     $reason = $result->getReason(); // VerificationFailureReason enum
 }
 ```
@@ -320,21 +249,25 @@ if (!$result->isValid()) {
 
 ### `HmacConfig`
 
-Configuration value object passed to services.
+Immutable configuration DTO. Access via `app(HmacConfig::class)`.
 
-```php
-use HmacAuth\DTOs\HmacConfig;
-
-$config = app(HmacConfig::class);
-
-$config->enabled;            // bool
-$config->algorithm;          // string
-$config->timestampTolerance; // int
-$config->nonceTtl;           // int
-$config->apiKeyHeader;       // string
-$config->signatureHeader;    // string
-// ... etc
-```
+| Property | Type | Description |
+|----------|------|-------------|
+| `enabled` | bool | HMAC enabled |
+| `algorithm` | string | Default algorithm |
+| `timestampTolerance` | int | Tolerance in seconds |
+| `nonceTtl` | int | Nonce TTL |
+| `maxBodySize` | int | Max body bytes |
+| `apiKeyHeader` | string | Header name |
+| `signatureHeader` | string | Header name |
+| `timestampHeader` | string | Header name |
+| `nonceHeader` | string | Header name |
+| `rateLimitEnabled` | bool | Rate limiting on |
+| `rateLimitMaxAttempts` | int | Max attempts |
+| `enforceEnvironment` | bool | Environment check |
+| `tenancyEnabled` | bool | Multi-tenancy on |
+| `tenancyColumn` | string | Tenant FK column |
+| `tenancyModel` | string | Tenant model class |
 
 ---
 
@@ -342,50 +275,33 @@ $config->signatureHeader;    // string
 
 ### `HmacAlgorithm`
 
-Supported HMAC algorithms.
-
 ```php
-use HmacAuth\Enums\HmacAlgorithm;
+HmacAlgorithm::SHA256;  // 'sha256'
+HmacAlgorithm::SHA384;  // 'sha384'
+HmacAlgorithm::SHA512;  // 'sha512'
 
-HmacAlgorithm::SHA256; // 'sha256'
-HmacAlgorithm::SHA384; // 'sha384'
-HmacAlgorithm::SHA512; // 'sha512'
-
-// Get default
-$default = HmacAlgorithm::default(); // SHA256
-
-// Parse from string
-$algo = HmacAlgorithm::tryFromString('sha512'); // SHA512 or null
-
-// List supported names
-$names = HmacAlgorithm::supportedNames(); // ['sha256', 'sha384', 'sha512']
+HmacAlgorithm::default();           // SHA256
+HmacAlgorithm::tryFromString('sha512');
+HmacAlgorithm::supportedNames();    // ['sha256', 'sha384', 'sha512']
 ```
 
 ---
 
 ### `VerificationFailureReason`
 
-All possible reasons for authentication failure.
-
-```php
-use HmacAuth\Enums\VerificationFailureReason;
-
-VerificationFailureReason::MISSING_HEADERS;      // Required headers missing
-VerificationFailureReason::INVALID_TIMESTAMP;    // Timestamp outside tolerance
-VerificationFailureReason::BODY_TOO_LARGE;       // Request body exceeds limit
-VerificationFailureReason::IP_BLOCKED;           // IP address blocked
-VerificationFailureReason::RATE_LIMITED;         // Client rate limited
-VerificationFailureReason::INVALID_NONCE;        // Nonce format invalid
-VerificationFailureReason::DUPLICATE_NONCE;      // Nonce already used
-VerificationFailureReason::INVALID_CLIENT_ID;    // Client ID not found
-VerificationFailureReason::CREDENTIAL_EXPIRED;   // Credential has expired
-VerificationFailureReason::ENVIRONMENT_MISMATCH; // Wrong environment
-VerificationFailureReason::INVALID_SECRET;       // Secret is invalid
-VerificationFailureReason::INVALID_SIGNATURE;    // Signature doesn't match
-
-// Get HTTP status code for reason
-$status = $reason->httpStatusCode(); // 401 or 403
-```
+| Reason | HTTP | Description |
+|--------|------|-------------|
+| `MISSING_HEADERS` | 401 | Required headers missing |
+| `INVALID_TIMESTAMP` | 401 | Timestamp outside tolerance |
+| `BODY_TOO_LARGE` | 413 | Body exceeds limit |
+| `IP_BLOCKED` | 403 | IP blocked |
+| `RATE_LIMITED` | 429 | Rate limited |
+| `INVALID_NONCE` | 401 | Bad nonce format |
+| `DUPLICATE_NONCE` | 401 | Nonce reused |
+| `INVALID_CLIENT_ID` | 401 | Client not found |
+| `CREDENTIAL_EXPIRED` | 401 | Expired |
+| `ENVIRONMENT_MISMATCH` | 403 | Wrong environment |
+| `INVALID_SIGNATURE` | 401 | Signature mismatch |
 
 ---
 
@@ -393,68 +309,28 @@ $status = $reason->httpStatusCode(); // 401 or 403
 
 ### `AuthenticationSucceeded`
 
-Dispatched when authentication succeeds.
-
 ```php
-use HmacAuth\Events\AuthenticationSucceeded;
-
-// In EventServiceProvider
-protected $listen = [
-    AuthenticationSucceeded::class => [
-        LogSuccessfulAuth::class,
-    ],
-];
-
-// In listener
-public function handle(AuthenticationSucceeded $event): void
-{
-    $credential = $event->credential;
-    $request = $event->request;
-
-    Log::info('API authenticated', [
-        'client_id' => $credential->client_id,
-        'ip' => $request->ip(),
-    ]);
-}
+// Properties: $credential, $request
+Event::listen(AuthenticationSucceeded::class, function ($event) {
+    Log::info('Auth success', ['client' => $event->credential->client_id]);
+});
 ```
-
----
 
 ### `AuthenticationFailed`
 
-Dispatched when authentication fails.
-
 ```php
-use HmacAuth\Events\AuthenticationFailed;
-
-// In EventServiceProvider
-protected $listen = [
-    AuthenticationFailed::class => [
-        AlertOnAuthFailure::class,
-    ],
-];
-
-// In listener
-public function handle(AuthenticationFailed $event): void
-{
-    $reason = $event->reason;    // VerificationFailureReason
-    $clientId = $event->clientId;
-    $request = $event->request;
-
-    if ($reason === VerificationFailureReason::INVALID_SIGNATURE) {
-        // Alert on signature failures
-    }
-}
+// Properties: $reason, $clientId, $request
+Event::listen(AuthenticationFailed::class, function ($event) {
+    Log::warning('Auth failed', ['reason' => $event->reason->value]);
+});
 ```
 
 ---
 
-## Contracts (Interfaces)
+## Contracts
 
-The package uses dependency injection with interfaces for testability:
-
-| Interface | Default Implementation |
-|-----------|----------------------|
+| Interface | Implementation |
+|-----------|----------------|
 | `HmacVerifierInterface` | `HmacVerificationService` |
 | `SignatureServiceInterface` | `SignatureService` |
 | `ApiCredentialRepositoryInterface` | `EloquentApiCredentialRepository` |
@@ -462,11 +338,8 @@ The package uses dependency injection with interfaces for testability:
 | `RateLimiterInterface` | `RedisRateLimiter` |
 | `RequestLoggerInterface` | `DatabaseRequestLogger` |
 
-You can bind custom implementations in a service provider:
+Override in a service provider:
 
 ```php
-$this->app->bind(
-    NonceStoreInterface::class,
-    CustomNonceStore::class
-);
+$this->app->bind(NonceStoreInterface::class, CustomNonceStore::class);
 ```

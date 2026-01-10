@@ -14,7 +14,7 @@ class Base64UrlTestClass
         return $this->base64UrlEncode($data);
     }
 
-    public function decode(string $data): string
+    public function decode(string $data): string|false
     {
         return $this->base64UrlDecode($data);
     }
@@ -130,11 +130,10 @@ describe('EncodesBase64Url', function () {
             expect($decoded)->toBe($binary);
         });
 
-        it('returns empty string for invalid base64', function () {
-            // Invalid base64 that can't be decoded
+        it('returns false for invalid base64', function () {
             $decoded = $this->encoder->decode('!!!invalid!!!');
 
-            expect($decoded)->toBe('');
+            expect($decoded)->toBeFalse();
         });
 
         it('handles standard base64 with URL replacements', function () {

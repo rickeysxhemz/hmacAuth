@@ -30,102 +30,98 @@ use HmacAuth\Services\RateLimiterService;
 use HmacAuth\Services\RequestLogger;
 use HmacAuth\Services\SecureKeyGenerator;
 use HmacAuth\Services\SignatureService;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\Console\AboutCommand;
-use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
-use Override;
 
-/**
- * Service provider for HMAC authentication services.
- */
 final class HmacAuthServiceProvider extends ServiceProvider
 {
     /**
-     * Interface to implementation bindings.
-     *
-     * @var array<class-string, class-string>
+     * Register any package services.
      */
-    public array $bindings = [
-        ApiCredentialRepositoryInterface::class => ApiCredentialRepository::class,
-        ApiRequestLogRepositoryInterface::class => ApiRequestLogRepository::class,
-        HmacVerifierInterface::class => HmacVerificationService::class,
-        KeyGeneratorInterface::class => SecureKeyGenerator::class,
-        RateLimiterInterface::class => RateLimiterService::class,
-        RequestLoggerInterface::class => RequestLogger::class,
-        SignatureServiceInterface::class => SignatureService::class,
-    ];
-
-    /**
-     * Singleton services (auto-resolved by container).
-     *
-     * @var array<class-string, class-string|null>
-     */
-    public array $singletons = [
-        ApiCredentialRepository::class => null,
-        ApiRequestLogRepository::class => null,
-        SignatureService::class => null,
-        SecureKeyGenerator::class => null,
-        RateLimiterService::class => null,
-        RequestLogger::class => null,
-        HmacVerificationService::class => null,
-        ApiCredentialService::class => null,
-    ];
-
-    #[Override]
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/hmac.php', 'hmac');
 
-        $this->app->singleton(HmacConfig::class, fn (): HmacConfig => HmacConfig::fromConfig());
-
-        // Skip Redis-dependent services in testing environment
-        if ($this->app->environment('testing')) {
-            $this->app->singleton(NonceStore::class, fn ($app): NonceStore => new NonceStore(
-                null,
-                $app->make(HmacConfig::class)
-            ));
-        } else {
-            $this->app->singleton(NonceStore::class, fn ($app): NonceStore => new NonceStore(
-                Redis::connection(config('hmac.redis.connection', 'default')),
-                $app->make(HmacConfig::class)
-            ));
-        }
-
-        $this->app->bind(NonceStoreInterface::class, NonceStore::class);
-
-        // Register the HmacManager for the Facade
-        $this->app->singleton('hmac', function ($app): HmacManager {
-            return new HmacManager(
-                $app->make(HmacVerificationService::class),
-                $app->make(SignatureService::class),
-                $app->make(ApiCredentialService::class),
-                $app->make(SecureKeyGenerator::class),
-            );
-        });
+        $this->registerConfig();
+        $this->registerStatelessServices();
+        $this->registerScopedServices();
+        $this->registerFacade();
     }
 
+    /**
+     * Bootstrap any package services.
+     */
     public function boot(): void
     {
+        $this->loadTranslationsFrom(__DIR__.'/../lang', 'hmac');
+
         $this->registerMiddleware();
         $this->registerPolicies();
 
         if ($this->app->runningInConsole()) {
             $this->registerPublishing();
             $this->registerCommands();
+
+            if (class_exists(AboutCommand::class)) {
+                $this->registerAboutCommand();
+            }
         }
+    }
 
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'hmac-auth');
-        $this->loadTranslationsFrom(__DIR__.'/../lang', 'hmac');
+    private function registerConfig(): void
+    {
+        // Config is safe as singleton - Laravel handles config refresh in Octane
+        $this->app->singleton(HmacConfig::class, fn (): HmacConfig => HmacConfig::fromConfig());
+    }
 
-        // Register package info with About command
-        $this->registerAboutCommand();
+    private function registerStatelessServices(): void
+    {
+        // Stateless services - safe as singletons in Octane
+        $this->app->singleton(SignatureServiceInterface::class, SignatureService::class);
+        $this->app->singleton(KeyGeneratorInterface::class, SecureKeyGenerator::class);
+    }
+
+    private function registerScopedServices(): void
+    {
+        // Scoped services - flushed per request in Octane
+        $this->app->scoped(NonceStoreInterface::class, function (Application $app): NonceStore {
+            $config = $app->make(HmacConfig::class);
+
+            if ($app->environment('testing')) {
+                return new NonceStore(null, $config);
+            }
+
+            return new NonceStore(
+                Redis::connection(config('hmac.redis.connection', 'default')),
+                $config
+            );
+        });
+
+        $this->app->scoped(ApiCredentialRepositoryInterface::class, ApiCredentialRepository::class);
+        $this->app->scoped(ApiRequestLogRepositoryInterface::class, ApiRequestLogRepository::class);
+        $this->app->scoped(RateLimiterInterface::class, RateLimiterService::class);
+        $this->app->scoped(RequestLoggerInterface::class, RequestLogger::class);
+        $this->app->scoped(HmacVerifierInterface::class, HmacVerificationService::class);
+        $this->app->scoped(ApiCredentialService::class);
+    }
+
+    private function registerFacade(): void
+    {
+        // Scoped - depends on scoped services
+        $this->app->scoped('hmac', fn (Application $app): HmacManager => new HmacManager(
+            $app->make(HmacVerifierInterface::class),
+            $app->make(SignatureServiceInterface::class),
+            $app->make(ApiCredentialService::class),
+            $app->make(KeyGeneratorInterface::class),
+        ));
     }
 
     private function registerMiddleware(): void
     {
-        $this->app->make(Router::class)->aliasMiddleware('hmac.verify', VerifyHmacSignature::class);
+        $this->app['router']->aliasMiddleware('hmac.verify', VerifyHmacSignature::class);
     }
 
     private function registerPolicies(): void
@@ -135,37 +131,17 @@ final class HmacAuthServiceProvider extends ServiceProvider
 
     private function registerPublishing(): void
     {
-        // Publish config
         $this->publishes([
             __DIR__.'/../config/hmac.php' => config_path('hmac.php'),
         ], 'hmac-config');
 
-        // Publish migrations using publishesMigrations for Laravel 12+
         $this->publishesMigrations([
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'hmac-migrations');
 
-        // Publish views
-        $this->publishes([
-            __DIR__.'/../resources/views' => resource_path('views/vendor/hmac-auth'),
-        ], 'hmac-views');
-
-        // Publish CSS assets
-        $this->publishes([
-            __DIR__.'/../resources/css' => public_path('vendor/hmac-auth/css'),
-        ], 'hmac-assets');
-
-        // Publish language files
         $this->publishes([
             __DIR__.'/../lang' => $this->app->langPath('vendor/hmac'),
         ], 'hmac-lang');
-
-        // Publish all assets together
-        $this->publishes([
-            __DIR__.'/../config/hmac.php' => config_path('hmac.php'),
-            __DIR__.'/../resources/views' => resource_path('views/vendor/hmac-auth'),
-            __DIR__.'/../resources/css' => public_path('vendor/hmac-auth/css'),
-        ], 'hmac-auth');
     }
 
     private function registerCommands(): void
@@ -181,12 +157,11 @@ final class HmacAuthServiceProvider extends ServiceProvider
 
     private function registerAboutCommand(): void
     {
-        AboutCommand::add('HMAC Auth', fn () => [
+        AboutCommand::add('HMAC Auth', fn (): array => [
             'Version' => '1.0.0',
             'Algorithm' => config('hmac.algorithm', 'sha256'),
             'Enabled' => config('hmac.enabled', true) ? '<fg=green;options=bold>YES</>' : '<fg=red;options=bold>NO</>',
             'Rate Limiting' => config('hmac.rate_limit.enabled', true) ? '<fg=green;options=bold>YES</>' : '<fg=red;options=bold>NO</>',
-            'Environment Enforcement' => config('hmac.enforce_environment', true) ? '<fg=green;options=bold>YES</>' : '<fg=red;options=bold>NO</>',
         ]);
     }
 }
