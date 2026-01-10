@@ -7,6 +7,7 @@ namespace HmacAuth\Models;
 use Carbon\CarbonInterface;
 use HmacAuth\Concerns\HasTenantScoping;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -35,6 +36,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ApiRequestLog extends Model
 {
     use HasTenantScoping;
+    use MassPrunable;
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -54,7 +57,17 @@ class ApiRequestLog extends Model
         'created_at' => 'datetime',
     ];
 
-    protected $hidden = [];
+    /**
+     * Get the prunable model query for logs older than configured days.
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        $days = (int) config('hmac.log_retention_days', 30);
+
+        return static::where('created_at', '<', now()->subDays($days));
+    }
 
     /**
      * Scope: Get failed authentication attempts

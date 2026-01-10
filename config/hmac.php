@@ -141,4 +141,16 @@ return [
         'api/*',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Log Retention
+    |--------------------------------------------------------------------------
+    |
+    | Number of days to retain API request logs. Use Laravel's model:prune
+    | command to automatically clean up old logs: php artisan model:prune
+    |
+    */
+
+    'log_retention_days' => env('HMAC_LOG_RETENTION_DAYS', 30),
+
 ];

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
@@ -20,13 +21,13 @@ use Illuminate\Support\Facades\Log;
  * @property string|null $hmac_algorithm
  * @property string $environment
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $last_used_at
- * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property Carbon|null $last_used_at
+ * @property Carbon|null $expires_at
  * @property string|null $old_client_secret
- * @property \Illuminate\Support\Carbon|null $old_secret_expires_at
+ * @property Carbon|null $old_secret_expires_at
  * @property int $created_by
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  *
  * @method static Builder<static> active()
  * @method static Builder<static> forTenant(int|string $tenantId)
@@ -172,10 +173,7 @@ class ApiCredential extends Model
     protected function scopeSearchByTerm(Builder $query, string $term): void
     {
         $escapedTerm = addcslashes($term, '%_\\');
-
-        $query->where(function (Builder $q) use ($escapedTerm): void {
-            $q->where('client_id', 'like', '%'.$escapedTerm.'%');
-        });
+        $query->where('client_id', 'like', '%'.$escapedTerm.'%');
     }
 
     public static function isValidEnvironment(string $environment): bool
@@ -240,7 +238,7 @@ class ApiCredential extends Model
 
     public function markAsUsed(): void
     {
-        $this->update(['last_used_at' => now()]);
+        $this->forceFill(['last_used_at' => now()])->saveQuietly();
     }
 
     protected function getUserModelClass(): string

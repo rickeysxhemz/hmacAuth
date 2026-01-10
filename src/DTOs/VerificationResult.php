@@ -34,11 +34,11 @@ final readonly class VerificationResult
     /**
      * Create a failed verification result.
      */
-    public static function failure(VerificationFailureReason $reason): self
+    public static function failure(VerificationFailureReason $reason, ?ApiCredential $credential = null): self
     {
         return new self(
             valid: false,
-            credential: null,
+            credential: $credential,
             failureReason: $reason,
         );
     }

@@ -70,7 +70,7 @@ final readonly class HmacManager
     /**
      * Rotate the secret for a credential.
      *
-     * @return array{new_secret: string, old_secret_expires_at: string}
+     * @return array{credential: ApiCredential, new_secret: string, old_secret_expires_at: string}
      */
     public function rotateSecret(ApiCredential $credential, int $graceDays = 7): array
     {

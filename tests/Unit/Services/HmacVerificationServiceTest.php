@@ -11,6 +11,7 @@ use HmacAuth\DTOs\HmacConfig;
 use HmacAuth\Enums\VerificationFailureReason;
 use HmacAuth\Models\ApiCredential;
 use HmacAuth\Services\HmacVerificationService;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
 
 function createVerificationConfig(array $overrides = []): HmacConfig
@@ -60,6 +61,8 @@ describe('HmacVerificationService', function () {
         $this->requestLogger = Mockery::mock(RequestLoggerInterface::class);
         $this->rateLimiter = Mockery::mock(RateLimiterInterface::class);
         $this->signatureService = Mockery::mock(SignatureServiceInterface::class);
+        $this->dispatcher = Mockery::mock(Dispatcher::class);
+        $this->dispatcher->shouldReceive('dispatch')->byDefault();
         $this->config = createVerificationConfig();
     });
 
@@ -72,6 +75,7 @@ describe('HmacVerificationService', function () {
             $test->rateLimiter,
             $test->signatureService,
             $test->config,
+            $test->dispatcher,
         );
     }
 

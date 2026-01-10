@@ -16,7 +16,10 @@ use HmacAuth\DTOs\SignaturePayload;
 use HmacAuth\DTOs\VerificationResult;
 use HmacAuth\Enums\HmacAlgorithm;
 use HmacAuth\Enums\VerificationFailureReason;
+use HmacAuth\Events\AuthenticationFailed;
+use HmacAuth\Events\AuthenticationSucceeded;
 use HmacAuth\Models\ApiCredential;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
 
 /**
@@ -33,6 +36,7 @@ final readonly class HmacVerificationService implements HmacVerifierInterface
         private RateLimiterInterface $rateLimiter,
         private SignatureServiceInterface $signatureService,
         private HmacConfig $config,
+        private Dispatcher $dispatcher,
     ) {}
 
     public function __invoke(Request $request): VerificationResult
@@ -117,6 +121,12 @@ final readonly class HmacVerificationService implements HmacVerifierInterface
         $this->requestLogger->logSuccessfulAttempt($request, $credential);
         $this->rateLimiter->reset($clientId);
 
+        $this->dispatcher->dispatch(new AuthenticationSucceeded(
+            $request,
+            $credential,
+            $request->ip() ?? '0.0.0.0'
+        ));
+
         return VerificationResult::success($credential);
     }
 
@@ -159,6 +169,14 @@ final readonly class HmacVerificationService implements HmacVerifierInterface
     ): VerificationResult {
         $this->requestLogger->logFailedAttempt($request, $clientId, $reason->value, $credential);
 
-        return VerificationResult::failure($reason);
+        $this->dispatcher->dispatch(new AuthenticationFailed(
+            $request,
+            $clientId,
+            $reason,
+            $request->ip() ?? '0.0.0.0',
+            $credential
+        ));
+
+        return VerificationResult::failure($reason, $credential);
     }
 }
