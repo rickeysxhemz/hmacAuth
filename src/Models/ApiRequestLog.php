@@ -60,12 +60,13 @@ class ApiRequestLog extends Model
     /**
      * Get the prunable model query for logs older than configured days.
      *
-     * @return Builder<static>
+     * @return Builder<ApiRequestLog>
      */
     public function prunable(): Builder
     {
         $days = (int) config('hmac.log_retention_days', 30);
 
+        /** @var Builder<ApiRequestLog> */
         return static::where('created_at', '<', now()->subDays($days));
     }
 
