@@ -7,6 +7,7 @@ namespace HmacAuth\Services;
 use HmacAuth\Concerns\TruncatesStrings;
 use HmacAuth\Contracts\ApiRequestLogRepositoryInterface;
 use HmacAuth\Contracts\RequestLoggerInterface;
+use HmacAuth\Contracts\TenancyConfigInterface;
 use HmacAuth\DTOs\HmacConfig;
 use HmacAuth\Models\ApiCredential;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ final readonly class RequestLogger implements RequestLoggerInterface
     public function __construct(
         private ApiRequestLogRepositoryInterface $logRepository,
         private HmacConfig $config,
+        private TenancyConfigInterface $tenancyConfig,
     ) {}
 
     /**
@@ -40,8 +42,8 @@ final readonly class RequestLogger implements RequestLoggerInterface
             'response_status' => 200,
         ];
 
-        if ((bool) config('hmac.tenancy.enabled', false)) {
-            $tenantColumn = (string) config('hmac.tenancy.column', 'tenant_id');
+        if ($this->tenancyConfig->isEnabled()) {
+            $tenantColumn = $this->tenancyConfig->getColumn();
             $data[$tenantColumn] = $credential->{$tenantColumn};
         }
 
@@ -68,8 +70,8 @@ final readonly class RequestLogger implements RequestLoggerInterface
             'response_status' => 401,
         ];
 
-        if ((bool) config('hmac.tenancy.enabled', false) && $credential !== null) {
-            $tenantColumn = (string) config('hmac.tenancy.column', 'tenant_id');
+        if ($this->tenancyConfig->isEnabled() && $credential !== null) {
+            $tenantColumn = $this->tenancyConfig->getColumn();
             $data[$tenantColumn] = $credential->{$tenantColumn};
         }
 

@@ -153,19 +153,17 @@ describe('NonceStore', function () {
             $redis = Mockery::mock(Connection::class);
             $store = new NonceStore($redis, $config);
 
-            $redis->shouldReceive('command')
-                ->with('keys', ['hmac:nonce:*'])
-                ->once()
-                ->andReturn(['hmac:nonce:key1', 'hmac:nonce:key2']);
-
             config(['database.redis.options.prefix' => '']);
 
+            // Mock SCAN command - first call returns keys and cursor '0' (done)
             $redis->shouldReceive('command')
-                ->with('del', ['hmac:nonce:key1'])
-                ->once();
+                ->with('scan', ['0', 'MATCH', 'hmac:nonce:*', 'COUNT', 100])
+                ->once()
+                ->andReturn(['0', ['hmac:nonce:key1', 'hmac:nonce:key2']]);
 
+            // Mock batch DEL command
             $redis->shouldReceive('command')
-                ->with('del', ['hmac:nonce:key2'])
+                ->with('del', ['hmac:nonce:key1', 'hmac:nonce:key2'])
                 ->once();
 
             $store->clear();
@@ -176,12 +174,13 @@ describe('NonceStore', function () {
             $redis = Mockery::mock(Connection::class);
             $store = new NonceStore($redis, $config);
 
+            // Mock SCAN command returning empty key list
             $redis->shouldReceive('command')
-                ->with('keys', ['hmac:nonce:*'])
+                ->with('scan', ['0', 'MATCH', 'hmac:nonce:*', 'COUNT', 100])
                 ->once()
-                ->andReturn([]);
+                ->andReturn(['0', []]);
 
-            // Should not call del
+            // Should not call del when no keys found
             $redis->shouldNotReceive('command')
                 ->with('del', Mockery::any());
 

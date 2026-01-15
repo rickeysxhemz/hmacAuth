@@ -88,22 +88,31 @@ final readonly class NonceStore implements NonceStoreInterface
         assert($redis !== null);
 
         $pattern = $this->prefix.'*';
-
-        /** @var array<string> $keys */
-        $keys = $redis->command('keys', [$pattern]);
-
-        if ($keys === []) {
-            return;
-        }
-
         $redisPrefix = $this->config->databaseRedisPrefix;
+        $cursor = '0';
+        $batchSize = 100;
+        $maxIterations = 1000;
+        $iterations = 0;
 
-        foreach ($keys as $fullKey) {
-            $shortKey = $redisPrefix !== '' && str_starts_with($fullKey, $redisPrefix)
-                ? substr($fullKey, strlen($redisPrefix))
-                : $fullKey;
-            $redis->command('del', [$shortKey]);
-        }
+        do {
+            /** @var array{0: string, 1: array<string>} $result */
+            $result = $redis->command('scan', [$cursor, 'MATCH', $pattern, 'COUNT', $batchSize]);
+            $cursor = $result[0];
+            $keys = $result[1];
+
+            if ($keys !== []) {
+                $shortKeys = array_map(
+                    fn (string $fullKey): string => $redisPrefix !== '' && str_starts_with($fullKey, $redisPrefix)
+                        ? substr($fullKey, strlen($redisPrefix))
+                        : $fullKey,
+                    $keys
+                );
+
+                $redis->command('del', $shortKeys);
+            }
+
+            $iterations++;
+        } while ($cursor !== '0' && $iterations < $maxIterations);
     }
 
     protected function shouldFailOnRedisError(): bool

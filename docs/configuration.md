@@ -73,6 +73,13 @@ php artisan vendor:publish --tag=hmac-config
 | `tenancy.column` | `tenant_id` | `HMAC_TENANT_COLUMN` | Foreign key column name |
 | `tenancy.model` | `App\Models\Tenant` | `HMAC_TENANT_MODEL` | Tenant model class |
 
+When tenancy is enabled, add the tenant column to your models:
+
+```php
+protected $fillable = ['tenant_id', /* ... */];
+protected $hidden = ['tenant_id', /* ... */];
+```
+
 ### Models
 
 | Option | Default | Env | Description |

@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace HmacAuth;
 
 use Carbon\CarbonInterface;
+use HmacAuth\Contracts\ApiCredentialServiceInterface;
 use HmacAuth\Contracts\HmacVerifierInterface;
 use HmacAuth\Contracts\KeyGeneratorInterface;
 use HmacAuth\Contracts\SignatureServiceInterface;
 use HmacAuth\DTOs\SignaturePayload;
 use HmacAuth\DTOs\VerificationResult;
 use HmacAuth\Models\ApiCredential;
-use HmacAuth\Services\ApiCredentialService;
 use Illuminate\Http\Request;
 
 /**
@@ -22,7 +22,7 @@ final readonly class HmacManager
     public function __construct(
         private HmacVerifierInterface $verificationService,
         private SignatureServiceInterface $signatureService,
-        private ApiCredentialService $credentialService,
+        private ApiCredentialServiceInterface $credentialService,
         private KeyGeneratorInterface $keyGenerator,
     ) {}
 
