@@ -4,40 +4,42 @@ declare(strict_types=1);
 
 namespace HmacAuth\Concerns;
 
+use HmacAuth\Contracts\TenancyConfigInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Tenant scoping for Eloquent models.
+ *
+ * Note: Add tenant column to $fillable and $hidden when tenancy is enabled.
+ */
 trait HasTenantScoping
 {
-    public function initializeHasTenantScoping(): void
+    private ?TenancyConfigInterface $tenancyConfigCache = null;
+
+    protected function getTenancyConfig(): TenancyConfigInterface
     {
-        if ($this->isTenancyEnabled()) {
-            $column = $this->getTenantColumn();
-
-            if (! in_array($column, $this->fillable, true)) {
-                $this->fillable[] = $column;
-            }
-
-            if (! in_array($column, $this->hidden, true)) {
-                $this->hidden[] = $column;
-            }
+        if ($this->tenancyConfigCache === null) {
+            $this->tenancyConfigCache = app(TenancyConfigInterface::class);
         }
+
+        return $this->tenancyConfigCache;
     }
 
     protected function isTenancyEnabled(): bool
     {
-        return (bool) config('hmac.tenancy.enabled', false);
+        return $this->getTenancyConfig()->isEnabled();
     }
 
     protected function getTenantColumn(): string
     {
-        return (string) config('hmac.tenancy.column', 'tenant_id');
+        return $this->getTenancyConfig()->getColumn();
     }
 
     protected function getTenantModelClass(): string
     {
-        return (string) config('hmac.tenancy.model', 'App\\Models\\Tenant');
+        return $this->getTenancyConfig()->getModelClass();
     }
 
     /** @return BelongsTo<Model, $this> */

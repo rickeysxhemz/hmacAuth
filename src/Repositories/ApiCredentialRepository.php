@@ -6,6 +6,7 @@ namespace HmacAuth\Repositories;
 
 use HmacAuth\Concerns\CacheRepositoryConcerns;
 use HmacAuth\Contracts\ApiCredentialRepositoryInterface;
+use HmacAuth\Contracts\TenancyConfigInterface;
 use HmacAuth\Models\ApiCredential;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -24,7 +25,11 @@ final readonly class ApiCredentialRepository implements ApiCredentialRepositoryI
 {
     use CacheRepositoryConcerns;
 
-    private const int CACHE_TTL_SECONDS = 300;
+    private const int CACHE_TTL_SECONDS = 60;
+
+    public function __construct(
+        private TenancyConfigInterface $tenancyConfig,
+    ) {}
 
     private const int CACHE_LOCK_TIMEOUT = 10;
 
@@ -162,7 +167,7 @@ final readonly class ApiCredentialRepository implements ApiCredentialRepositoryI
      */
     public function getByTenant(int|string $tenantId, int $limit = self::MAX_COLLECTION_LIMIT): Collection
     {
-        if (! (bool) config('hmac.tenancy.enabled', false)) {
+        if (! $this->tenancyConfig->isEnabled()) {
             throw new RuntimeException('Tenancy is not enabled. Enable tenancy in config/hmac.php to use this method.');
         }
 
@@ -183,7 +188,7 @@ final readonly class ApiCredentialRepository implements ApiCredentialRepositoryI
      */
     public function getActiveByTenant(int|string $tenantId, int $limit = self::MAX_COLLECTION_LIMIT): Collection
     {
-        if (! (bool) config('hmac.tenancy.enabled', false)) {
+        if (! $this->tenancyConfig->isEnabled()) {
             throw new RuntimeException('Tenancy is not enabled. Enable tenancy in config/hmac.php to use this method.');
         }
 
@@ -208,21 +213,39 @@ final readonly class ApiCredentialRepository implements ApiCredentialRepositoryI
     }
 
     /**
-     * Update credential.
+     * Update credential and invalidate cache.
      *
      * @param  array<string, mixed>  $data
      */
     public function update(ApiCredential $credential, array $data): bool
     {
-        return $credential->update($data);
+        $clientId = $credential->client_id;
+
+        $result = $credential->update($data);
+
+        // Invalidate cache after update
+        if ($result && is_string($clientId)) {
+            $this->invalidateCache($clientId);
+        }
+
+        return $result;
     }
 
     /**
-     * Delete credential.
+     * Delete credential and invalidate cache.
      */
     public function delete(ApiCredential $credential): bool
     {
-        return (bool) $credential->delete();
+        $clientId = $credential->client_id;
+
+        $result = (bool) $credential->delete();
+
+        // Invalidate cache after deletion
+        if ($result && is_string($clientId)) {
+            $this->invalidateCache($clientId);
+        }
+
+        return $result;
     }
 
     /**
@@ -309,7 +332,7 @@ final readonly class ApiCredentialRepository implements ApiCredentialRepositoryI
      */
     public function countActiveByTenant(int|string $tenantId): int
     {
-        if (! (bool) config('hmac.tenancy.enabled', false)) {
+        if (! $this->tenancyConfig->isEnabled()) {
             throw new RuntimeException('Tenancy is not enabled. Enable tenancy in config/hmac.php to use this method.');
         }
 

@@ -34,7 +34,7 @@ describe('ApiRequestLog', function () {
         });
     });
 
-    describe('fillable (tenancy mode)', function () {
+    describe('tenancy trait', function () {
         beforeEach(function () {
             config(['hmac.tenancy.enabled' => true]);
             config(['hmac.tenancy.column' => 'tenant_id']);
@@ -44,10 +44,10 @@ describe('ApiRequestLog', function () {
             config(['hmac.tenancy.enabled' => false]);
         });
 
-        it('has tenant column in fillable when tenancy is enabled', function () {
-            $log = new ApiRequestLog;
+        it('uses HasTenantScoping trait', function () {
+            $traits = class_uses_recursive(ApiRequestLog::class);
 
-            expect($log->getFillable())->toContain('tenant_id');
+            expect($traits)->toContain('HmacAuth\Concerns\HasTenantScoping');
         });
     });
 

@@ -6,6 +6,7 @@ namespace HmacAuth\Repositories;
 
 use Carbon\CarbonInterface;
 use HmacAuth\Contracts\ApiRequestLogRepositoryInterface;
+use HmacAuth\Contracts\TenancyConfigInterface;
 use HmacAuth\Models\ApiRequestLog;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,6 +22,10 @@ use stdClass;
  */
 final readonly class ApiRequestLogRepository implements ApiRequestLogRepositoryInterface
 {
+    public function __construct(
+        private TenancyConfigInterface $tenancyConfig,
+    ) {}
+
     /**
      * @return Builder<ApiRequestLog>
      */
@@ -50,7 +55,7 @@ final readonly class ApiRequestLogRepository implements ApiRequestLogRepositoryI
      */
     public function getByTenant(int|string $tenantId, int $limit = 100): Collection
     {
-        if (! (bool) config('hmac.tenancy.enabled', false)) {
+        if (! $this->tenancyConfig->isEnabled()) {
             throw new RuntimeException('Tenancy is not enabled. Enable tenancy in config/hmac.php to use this method.');
         }
 
@@ -139,7 +144,7 @@ final readonly class ApiRequestLogRepository implements ApiRequestLogRepositoryI
     {
         $relations = ['apiCredential'];
 
-        if ((bool) config('hmac.tenancy.enabled', false)) {
+        if ($this->tenancyConfig->isEnabled()) {
             $relations[] = 'tenant';
         }
 
@@ -186,7 +191,7 @@ final readonly class ApiRequestLogRepository implements ApiRequestLogRepositoryI
      */
     public function getStatsForTenant(int|string $tenantId, int $days = 7): array
     {
-        if (! (bool) config('hmac.tenancy.enabled', false)) {
+        if (! $this->tenancyConfig->isEnabled()) {
             throw new RuntimeException('Tenancy is not enabled. Enable tenancy in config/hmac.php to use this method.');
         }
 
@@ -306,17 +311,11 @@ final readonly class ApiRequestLogRepository implements ApiRequestLogRepositoryI
             ->orderByDesc('failure_count')
             ->get();
 
-        $mapped = collect();
-        foreach ($results as $row) {
-            $failureCount = $row->getAttribute('failure_count');
-            $mapped->push((object) [
-                'ip_address' => $row->ip_address,
-                'failure_count' => is_numeric($failureCount) ? (int) $failureCount : 0,
-            ]);
-        }
-
         /** @var SupportCollection<int, stdClass> */
-        return $mapped;
+        return $results->map(fn (ApiRequestLog $row): stdClass => (object) [
+            'ip_address' => $row->ip_address,
+            'failure_count' => is_numeric($fc = $row->getAttribute('failure_count')) ? (int) $fc : 0,
+        ]);
     }
 
     /**

@@ -1,56 +1,22 @@
-# Laravel HMAC Auth
+# Documentation
 
-HMAC-based API authentication for Laravel.
+## Guides
 
-## Docs
+- [Getting Started](getting-started.md) - Installation and setup
+- [Configuration](configuration.md) - All options
+- [Commands](commands.md) - Artisan commands
+- [Security](security.md) - Best practices
+- [Troubleshooting](troubleshooting.md) - Common issues
 
-- [Installation](installation.md)
-- [Configuration](configuration.md)
-- [Artisan Commands](artisan-commands.md)
-- [Client Implementation](client-implementation.md)
-- [API Reference](api-reference.md)
-- [Security](security-best-practices.md)
-- [Troubleshooting](troubleshooting.md)
-- [Migration Guide](migration-guide.md)
+## Reference
 
-## Quick Start
+- [API Reference](api-reference.md) - Services, DTOs, interfaces
+- [Client Examples](clients/) - PHP, JS, Python, cURL
 
-```bash
-composer require hmacauth/laravel-hmac-auth
-php artisan hmac:install
-php artisan hmac:generate --environment=production
-```
+## Quick Reference
 
-```php
-Route::middleware('hmac.verify')->group(function () {
-    Route::get('/api/protected', [ApiController::class, 'index']);
-});
-```
-
-## Compatibility
-
-| Package | PHP | Laravel |
-|---------|-----|---------|
-| 1.x | 8.2 - 8.4 | 11.x - 12.x |
-
-## Flow
-
-```
-Request → Middleware → HmacVerificationService
-                              ↓
-           1. Validate headers
-           2. Check timestamp
-           3. Check rate limits
-           4. Verify nonce
-           5. Lookup credential
-           6. Verify signature
-                              ↓
-                    Success → Continue
-                    Failure → 401/429
-```
-
-## Modes
-
-**Standalone (default):** Credentials work globally.
-
-**Multi-tenant:** Credentials scoped to tenants via configurable column.
+| Requirement | Version |
+|-------------|---------|
+| PHP | 8.3+ |
+| Laravel | 11.x / 12.x |
+| Redis | Required |
