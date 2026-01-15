@@ -12,6 +12,7 @@ use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -208,8 +209,24 @@ final readonly class ApiCredentialRepository implements ApiCredentialRepositoryI
      */
     public function create(array $data): ApiCredential
     {
-        /** @var ApiCredential */
-        return $this->query()->create($data);
+        $credential = new ApiCredential;
+
+        if ($this->tenancyConfig->isEnabled()) {
+            $tenantColumn = $this->tenancyConfig->getColumn();
+            $tenantValue = Arr::pull($data, $tenantColumn);
+
+            $credential->fill($data);
+
+            if ($tenantValue !== null) {
+                $credential->forceFill([$tenantColumn => $tenantValue]);
+            }
+        } else {
+            $credential->fill($data);
+        }
+
+        $credential->save();
+
+        return $credential;
     }
 
     /**

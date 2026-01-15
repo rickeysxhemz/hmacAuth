@@ -180,5 +180,101 @@ describe('ApiRequestLog', function () {
         it('has tenant relationship method', function () {
             expect(method_exists(ApiRequestLog::class, 'tenant'))->toBeTrue();
         });
+
+        it('apiCredential returns BelongsTo relationship', function () {
+            $log = new ApiRequestLog;
+            $relation = $log->apiCredential();
+
+            expect($relation)->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+        });
+    });
+
+    describe('prunable', function () {
+        it('uses MassPrunable trait', function () {
+            $traits = class_uses_recursive(ApiRequestLog::class);
+
+            expect($traits)->toContain('Illuminate\Database\Eloquent\MassPrunable');
+        });
+
+        it('has prunable method', function () {
+            expect(method_exists(ApiRequestLog::class, 'prunable'))->toBeTrue();
+        });
+
+        it('returns query for logs older than configured days', function () {
+            config(['hmac.log_retention_days' => 30]);
+
+            $log = new ApiRequestLog;
+            $query = $log->prunable();
+
+            expect($query)->toBeInstanceOf(\Illuminate\Database\Eloquent\Builder::class);
+        });
+    });
+
+    describe('scopes with database', function () {
+        beforeEach(function () {
+            // Create test logs
+            ApiRequestLog::insert([
+                'client_id' => 'test-client-1',
+                'request_method' => 'GET',
+                'request_path' => '/api/test',
+                'ip_address' => '192.168.1.1',
+                'signature_valid' => true,
+                'response_status' => 200,
+                'created_at' => now(),
+            ]);
+
+            ApiRequestLog::insert([
+                'client_id' => 'test-client-2',
+                'request_method' => 'POST',
+                'request_path' => '/api/users',
+                'ip_address' => '192.168.1.2',
+                'signature_valid' => false,
+                'response_status' => 401,
+                'created_at' => now(),
+            ]);
+        });
+
+        it('failed scope filters failed attempts', function () {
+            $failedLogs = ApiRequestLog::failed()->get();
+
+            expect($failedLogs)->toHaveCount(1)
+                ->and($failedLogs->first()->signature_valid)->toBeFalse();
+        });
+
+        it('successful scope filters successful attempts', function () {
+            $successfulLogs = ApiRequestLog::successful()->get();
+
+            expect($successfulLogs)->toHaveCount(1)
+                ->and($successfulLogs->first()->signature_valid)->toBeTrue();
+        });
+
+        it('forClient scope filters by client', function () {
+            $logs = ApiRequestLog::forClient('test-client-1')->get();
+
+            expect($logs)->toHaveCount(1)
+                ->and($logs->first()->client_id)->toBe('test-client-1');
+        });
+
+        it('fromIp scope filters by IP address', function () {
+            $logs = ApiRequestLog::fromIp('192.168.1.1')->get();
+
+            expect($logs)->toHaveCount(1)
+                ->and($logs->first()->ip_address)->toBe('192.168.1.1');
+        });
+
+        it('recent scope filters by time', function () {
+            $logs = ApiRequestLog::recent(60)->get();
+
+            expect($logs)->toHaveCount(2);
+        });
+
+        it('dateRange scope filters by date range', function () {
+            $from = now()->subHour();
+            $to = now()->addHour();
+
+            $logs = ApiRequestLog::dateRange($from, $to)->get();
+
+            expect($logs)->toHaveCount(2);
+        });
     });
 });

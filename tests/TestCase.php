@@ -18,6 +18,7 @@ abstract class TestCase extends Orchestra
 
         // Run migrations for testing
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/Fixtures/Migrations');
     }
 
     /**
@@ -81,6 +82,41 @@ abstract class TestCase extends Orchestra
 
         // Set cache driver
         $app['config']->set('cache.default', 'array');
+
+        // Configure Redis for testing (uses system Redis on default port)
+        $app['config']->set('database.redis.client', 'phpredis');
+        $app['config']->set('database.redis.default', [
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'port' => env('REDIS_PORT', 6379),
+            'password' => env('REDIS_PASSWORD', null),
+            'database' => env('REDIS_DB', 15), // Use DB 15 for tests to avoid conflicts
+            'prefix' => 'hmac_test:',
+        ]);
+
+        // Use test fixtures
+        $app['config']->set('hmac.models.user', \HmacAuth\Tests\Fixtures\Models\User::class);
+
+        // Enable Redis for testing nonce storage
+        $app['config']->set('hmac.testing.use_redis', true);
+    }
+
+    /**
+     * Clean up Redis test keys after each test.
+     */
+    protected function tearDown(): void
+    {
+        try {
+            $redis = $this->app->make('redis')->connection();
+            // Clear all test keys
+            $keys = $redis->keys('hmac_test:*');
+            if (! empty($keys)) {
+                $redis->del($keys);
+            }
+        } catch (\Throwable) {
+            // Redis may not be available, ignore
+        }
+
+        parent::tearDown();
     }
 
     /**
