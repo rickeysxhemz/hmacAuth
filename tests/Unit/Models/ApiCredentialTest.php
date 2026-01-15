@@ -305,4 +305,182 @@ describe('ApiCredential', function () {
             expect($array)->not->toHaveKey('tenant_id');
         });
     });
+
+    describe('matchesCurrentEnvironment()', function () {
+        it('matches when app env is production and credential is production', function () {
+            config(['app.env' => 'production']);
+
+            $credential = new ApiCredential;
+            $credential->environment = 'production';
+
+            expect($credential->matchesCurrentEnvironment())->toBeTrue();
+        });
+
+        it('matches when app env is local and credential is testing', function () {
+            config(['app.env' => 'local']);
+
+            $credential = new ApiCredential;
+            $credential->environment = 'testing';
+
+            expect($credential->matchesCurrentEnvironment())->toBeTrue();
+        });
+
+        it('does not match when app env is production and credential is testing', function () {
+            config(['app.env' => 'production']);
+
+            $credential = new ApiCredential;
+            $credential->environment = 'testing';
+
+            expect($credential->matchesCurrentEnvironment())->toBeFalse();
+        });
+    });
+
+    describe('markAsUsed()', function () {
+        it('updates last_used_at timestamp', function () {
+            $clientSecret = generateTestSecret();
+            $credential = ApiCredential::create([
+                'client_id' => generateTestClientId('test'),
+                'client_secret' => $clientSecret,
+                'hmac_algorithm' => 'sha256',
+                'environment' => 'testing',
+                'is_active' => true,
+                'created_by' => 1,
+            ]);
+
+            expect($credential->last_used_at)->toBeNull();
+
+            $credential->markAsUsed();
+            $credential->refresh();
+
+            expect($credential->last_used_at)->not->toBeNull();
+        });
+    });
+
+    describe('relationships', function () {
+        it('has creator relationship', function () {
+            expect(method_exists(ApiCredential::class, 'creator'))->toBeTrue();
+        });
+
+        it('has requestLogs relationship', function () {
+            expect(method_exists(ApiCredential::class, 'requestLogs'))->toBeTrue();
+        });
+
+        it('creator returns BelongsTo relationship', function () {
+            $credential = new ApiCredential;
+            $relation = $credential->creator();
+
+            expect($relation)->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+        });
+
+        it('requestLogs returns HasMany relationship', function () {
+            $credential = new ApiCredential;
+            $relation = $credential->requestLogs();
+
+            expect($relation)->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        });
+    });
+
+    describe('scopes', function () {
+        beforeEach(function () {
+            // Create test credentials
+            ApiCredential::create([
+                'client_id' => generateTestClientId('test'),
+                'client_secret' => generateTestSecret(),
+                'hmac_algorithm' => 'sha256',
+                'environment' => 'testing',
+                'is_active' => true,
+                'created_by' => 1,
+            ]);
+
+            ApiCredential::create([
+                'client_id' => generateTestClientId('test'),
+                'client_secret' => generateTestSecret(),
+                'hmac_algorithm' => 'sha256',
+                'environment' => 'production',
+                'is_active' => true,
+                'created_by' => 1,
+            ]);
+        });
+
+        it('forEnvironment scope filters by environment', function () {
+            $testingCredentials = ApiCredential::forEnvironment('testing')->get();
+            $productionCredentials = ApiCredential::forEnvironment('production')->get();
+
+            expect($testingCredentials)->toHaveCount(1)
+                ->and($productionCredentials)->toHaveCount(1)
+                ->and($testingCredentials->first()->environment)->toBe('testing')
+                ->and($productionCredentials->first()->environment)->toBe('production');
+        });
+
+        it('active scope filters active and non-expired credentials', function () {
+            ApiCredential::create([
+                'client_id' => generateTestClientId('test'),
+                'client_secret' => generateTestSecret(),
+                'hmac_algorithm' => 'sha256',
+                'environment' => 'testing',
+                'is_active' => false,
+                'created_by' => 1,
+            ]);
+
+            $activeCredentials = ApiCredential::active()->get();
+
+            expect($activeCredentials)->toHaveCount(2);
+        });
+
+        it('expired scope filters expired credentials', function () {
+            ApiCredential::create([
+                'client_id' => generateTestClientId('test'),
+                'client_secret' => generateTestSecret(),
+                'hmac_algorithm' => 'sha256',
+                'environment' => 'testing',
+                'is_active' => true,
+                'expires_at' => now()->subDay(),
+                'created_by' => 1,
+            ]);
+
+            $expiredCredentials = ApiCredential::expired()->get();
+
+            expect($expiredCredentials)->toHaveCount(1);
+        });
+
+        it('expiringSoon scope filters credentials expiring within days', function () {
+            ApiCredential::create([
+                'client_id' => generateTestClientId('test'),
+                'client_secret' => generateTestSecret(),
+                'hmac_algorithm' => 'sha256',
+                'environment' => 'testing',
+                'is_active' => true,
+                'expires_at' => now()->addDays(3),
+                'created_by' => 1,
+            ]);
+
+            $expiringSoon = ApiCredential::expiringSoon(7)->get();
+
+            expect($expiringSoon)->toHaveCount(1);
+        });
+
+        it('searchByTerm scope method exists', function () {
+            expect(method_exists(ApiCredential::class, 'scopeSearchByTerm'))->toBeTrue();
+        });
+    });
+
+    describe('decryption failure handling', function () {
+        it('returns null for client_secret when decryption fails', function () {
+            $credential = new ApiCredential;
+            // Manually set an invalid encrypted value using setRawAttributes
+            $credential->setRawAttributes(['client_secret' => 'invalid-encrypted-value', 'client_id' => 'test-client'], true);
+
+            // Should log error and return null
+            expect($credential->client_secret)->toBeNull();
+        });
+
+        it('returns null for old_client_secret when decryption fails', function () {
+            $credential = new ApiCredential;
+            // Manually set an invalid encrypted value using setRawAttributes
+            $credential->setRawAttributes(['old_client_secret' => 'invalid-encrypted-value', 'client_id' => 'test-client'], true);
+
+            // Should log warning and return null
+            expect($credential->old_client_secret)->toBeNull();
+        });
+    });
 });

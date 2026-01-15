@@ -114,7 +114,10 @@ final class HmacAuthServiceProvider extends ServiceProvider
         $this->app->scoped(NonceStoreInterface::class, function (Application $app): NonceStore {
             $config = $app->make(HmacConfig::class);
 
-            if ($app->environment('testing')) {
+            // Disable Redis in testing unless explicitly enabled via config
+            $useRedis = ! $app->environment('testing') || config('hmac.testing.use_redis', false);
+
+            if (! $useRedis) {
                 return new NonceStore(null, $config);
             }
 
