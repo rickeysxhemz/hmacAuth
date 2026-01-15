@@ -33,10 +33,13 @@ final readonly class NonceStore implements NonceStoreInterface
 
         $key = $this->getKey($nonce);
 
+        $redis = $this->redis;
+        assert($redis !== null);
+
         return $this->executeRedisOperation(
-            operation: function () use ($key): bool {
+            operation: function () use ($key, $redis): bool {
                 /** @var int $result */
-                $result = $this->redis->command('exists', [$key]);
+                $result = $redis->command('exists', [$key]);
 
                 return $result > 0;
             },
@@ -54,8 +57,14 @@ final readonly class NonceStore implements NonceStoreInterface
             return;
         }
 
+        $redis = $this->redis;
+        assert($redis !== null);
+
+        $key = $this->getKey($nonce);
+        $ttl = $this->config->nonceTtl;
+
         $this->executeRedisOperation(
-            operation: fn (): bool => (bool) $this->redis->command('setex', [$this->getKey($nonce), $this->config->nonceTtl, '1']),
+            operation: fn (): bool => (bool) $redis->command('setex', [$key, $ttl, '1']),
             default: false,
             context: 'NonceStore::store',
             logData: ['nonce_prefix' => $this->maskSensitiveValue($nonce)],
@@ -75,10 +84,13 @@ final readonly class NonceStore implements NonceStoreInterface
             return;
         }
 
+        $redis = $this->redis;
+        assert($redis !== null);
+
         $pattern = $this->prefix.'*';
 
         /** @var array<string> $keys */
-        $keys = $this->redis->command('keys', [$pattern]);
+        $keys = $redis->command('keys', [$pattern]);
 
         if ($keys === []) {
             return;
@@ -90,7 +102,7 @@ final readonly class NonceStore implements NonceStoreInterface
             $shortKey = $redisPrefix !== '' && str_starts_with($fullKey, $redisPrefix)
                 ? substr($fullKey, strlen($redisPrefix))
                 : $fullKey;
-            $this->redis->command('del', [$shortKey]);
+            $redis->command('del', [$shortKey]);
         }
     }
 

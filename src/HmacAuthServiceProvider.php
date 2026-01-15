@@ -32,6 +32,7 @@ use HmacAuth\Services\SecureKeyGenerator;
 use HmacAuth\Services\SignatureService;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\Console\AboutCommand;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
@@ -121,7 +122,9 @@ final class HmacAuthServiceProvider extends ServiceProvider
 
     private function registerMiddleware(): void
     {
-        $this->app['router']->aliasMiddleware('hmac.verify', VerifyHmacSignature::class);
+        /** @var Router $router */
+        $router = $this->app->make('router');
+        $router->aliasMiddleware('hmac.verify', VerifyHmacSignature::class);
     }
 
     private function registerPolicies(): void
