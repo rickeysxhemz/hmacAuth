@@ -61,7 +61,7 @@
     },
     "scripts": {
         "test": "pest",
-        "test-coverage": "pest --coverage --min=90",
+        "test-coverage": "pest --coverage --min=90 --coverage-clover=coverage.xml",
         "analyse": "phpstan analyse",
         "format": "pint",
         "format-check": "pint --test"
