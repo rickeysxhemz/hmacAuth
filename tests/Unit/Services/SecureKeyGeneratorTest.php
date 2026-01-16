@@ -196,7 +196,7 @@ describe('SecureKeyGenerator', function () {
                 clientIdLength: 32, // Double the default
                 secretLength: 48,
                 cacheStore: null,
-        cachePrefix: 'hmac:nonce:',
+                cachePrefix: 'hmac:nonce:',
                 nonceTtl: 600,
                 maxBodySize: 1048576,
                 minNonceLength: 32,
@@ -228,7 +228,7 @@ describe('SecureKeyGenerator', function () {
                 clientIdLength: 16,
                 secretLength: 64, // 64 bytes
                 cacheStore: null,
-        cachePrefix: 'hmac:nonce:',
+                cachePrefix: 'hmac:nonce:',
                 nonceTtl: 600,
                 maxBodySize: 1048576,
                 minNonceLength: 32,
