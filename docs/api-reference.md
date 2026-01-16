@@ -15,9 +15,9 @@ $signature = Hmac::generateSignature($payload, $secret);
 
 // Generate credentials
 $credentials = Hmac::generateCredentials(
-    companyId: 1,
     createdBy: 1,
-    environment: 'production'
+    environment: 'production',
+    tenantId: 1 // only when tenancy enabled
 );
 
 // Rotate secret
@@ -99,17 +99,17 @@ $service->getSupportedAlgorithms(); // ['sha256', 'sha384', 'sha512']
 
 ### `ApiCredentialService`
 
-#### `generate(int $companyId, int $createdBy, string $environment, ?CarbonInterface $expiresAt): array`
+#### `generate(int $createdBy, string $environment, ?CarbonInterface $expiresAt, int|string|null $tenantId): array`
 
 ```php
 use HmacAuth\Services\ApiCredentialService;
 
 $service = app(ApiCredentialService::class);
 $result = $service->generate(
-    companyId: 1,
     createdBy: auth()->id(),
     environment: 'production',
-    expiresAt: now()->addYear()
+    expiresAt: now()->addYear(),
+    tenantId: 1 // only required when tenancy enabled
 );
 
 $credential = $result['credential'];
@@ -334,9 +334,9 @@ Event::listen(AuthenticationFailed::class, function ($event) {
 | `HmacVerifierInterface` | `HmacVerificationService` |
 | `SignatureServiceInterface` | `SignatureService` |
 | `ApiCredentialRepositoryInterface` | `EloquentApiCredentialRepository` |
-| `NonceStoreInterface` | `RedisNonceStore` |
-| `RateLimiterInterface` | `RedisRateLimiter` |
-| `RequestLoggerInterface` | `DatabaseRequestLogger` |
+| `NonceStoreInterface` | `NonceStore` |
+| `RateLimiterInterface` | `RateLimiterService` |
+| `RequestLoggerInterface` | `RequestLogger` |
 
 Override in a service provider:
 
