@@ -1,13 +1,19 @@
 {
     "name": "hmacauth/laravel-hmac-auth",
-    "description": "Enterprise-grade HMAC-based API authentication for Laravel with Octane support",
+    "description": "HMAC API authentication for Laravel with signature verification, replay attack prevention, and rate limiting",
     "keywords": [
         "laravel",
         "hmac",
         "authentication",
         "api",
         "security",
-        "octane"
+        "octane",
+        "middleware",
+        "signature",
+        "nonce",
+        "rate-limiting",
+        "replay-attack",
+        "request-signing"
     ],
     "type": "library",
     "license": "MIT",
@@ -60,8 +66,8 @@
         }
     },
     "scripts": {
-        "test": "pest",
-        "test-coverage": "pest --coverage --min=90 --coverage-clover=coverage.xml",
+        "test": "pest --configuration=phpunit.xml.dist",
+        "test-coverage": "pest --configuration=phpunit.xml.dist --coverage --min=90 --coverage-clover=coverage.xml",
         "analyse": "phpstan analyse",
         "format": "pint",
         "format-check": "pint --test"
