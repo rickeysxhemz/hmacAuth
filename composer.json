@@ -66,8 +66,8 @@
         }
     },
     "scripts": {
-        "test": "pest --configuration=phpunit.xml",
-        "test-coverage": "pest --configuration=phpunit.xml --coverage --min=90 --coverage-clover=coverage.xml",
+        "test": "pest --configuration=phpunit.xml.dist",
+        "test-coverage": "pest --configuration=phpunit.xml.dist --coverage --min=90 --coverage-clover=coverage.xml",
         "analyse": "phpstan analyse",
         "format": "pint",
         "format-check": "pint --test"
