@@ -13,12 +13,12 @@
 ### How to Report
 
 1. **GitHub Security Advisories (Preferred)**
-   - Go to the [Security Advisories](https://github.com/your-username/laravel-hmac-auth/security/advisories) page
+   - Go to the [Security Advisories](https://github.com/rickeysxhemz/hmacAuth/security/advisories) page
    - Click "Report a vulnerability"
    - Provide detailed information about the vulnerability
 
 2. **Email**
-   - Send details to: security@your-domain.com
+   - Send details to: hello@waqasmajeed.dev
    - Use the subject line: `[SECURITY] Laravel HMAC Auth - Brief Description`
 
 ### What to Include
