@@ -61,5 +61,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configurable timestamp tolerance to prevent replay attacks
 - Nonce uniqueness enforcement with TTL-based expiration
 
-[Unreleased]: https://github.com/your-username/laravel-hmac-auth/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/your-username/laravel-hmac-auth/releases/tag/v1.0.0
+[Unreleased]: https://github.com/rickeysxhemz/hmacAuth/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/rickeysxhemz/hmacAuth/releases/tag/v1.0.0

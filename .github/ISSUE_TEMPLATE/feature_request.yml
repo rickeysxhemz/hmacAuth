@@ -9,8 +9,18 @@ body:
         Thanks for suggesting a new feature! Please fill out the form below.
 
         **Before submitting**, please:
-        - Check existing issues and discussions
-        - Consider if it fits the project's scope
+        - [Search existing issues](https://github.com/rickeysxhemz/hmacAuth/issues?q=is%3Aissue) to avoid duplicates
+        - [Check discussions](https://github.com/rickeysxhemz/hmacAuth/discussions) for similar ideas
+        - Consider if it fits the project's scope (HMAC authentication)
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Describe the specific scenario where you need this feature.
+      placeholder: "As a [type of user], I want [goal] so that [benefit]..."
+    validations:
+      required: true
 
   - type: textarea
     id: problem

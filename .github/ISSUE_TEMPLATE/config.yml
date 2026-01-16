@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Documentation
-    url: https://github.com/your-username/laravel-hmac-auth/tree/main/docs
+    url: https://github.com/rickeysxhemz/hmacAuth/tree/main/docs
     about: Check the documentation before opening an issue
   - name: Security Vulnerabilities
-    url: https://github.com/your-username/laravel-hmac-auth/security/advisories/new
+    url: https://github.com/rickeysxhemz/hmacAuth/security/advisories/new
     about: Report security vulnerabilities privately via Security Advisories
   - name: Questions & Discussions
-    url: https://github.com/your-username/laravel-hmac-auth/discussions
+    url: https://github.com/rickeysxhemz/hmacAuth/discussions
     about: Ask questions and discuss ideas in GitHub Discussions

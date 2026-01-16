@@ -46,6 +46,17 @@
 - [ ] I have updated CHANGELOG.md under `[Unreleased]`
 - [ ] My commits follow the [Conventional Commits](https://www.conventionalcommits.org/) format
 
+## Security Checklist
+
+<!-- Complete if modifying security-critical files (authentication, cryptography, credentials) -->
+
+- [ ] No secrets, credentials, or API keys are exposed in the code
+- [ ] Cryptographic operations use secure algorithms (SHA-256 or stronger)
+- [ ] Input validation is properly implemented to prevent injection attacks
+- [ ] No timing attacks introduced in signature comparison
+- [ ] Sensitive data is not logged or exposed in error messages
+- [ ] Changes do not weaken existing security controls
+
 ## Screenshots (if applicable)
 
 <!-- Add screenshots to help explain your changes -->

@@ -2,6 +2,7 @@
 # https://git-cliff.org/docs/configuration
 
 [changelog]
+# Header template rendered at the beginning of the changelog
 header = """
 # Changelog
 
@@ -11,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 """
+
+# Body template rendered for each release
 body = """
 {% if version %}\
     ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
@@ -23,47 +26,91 @@ body = """
 
     {% for commit in commits %}
         - {% if commit.scope %}**{{ commit.scope }}:** {% endif %}\
+            {% if commit.breaking %}[**breaking**] {% endif %}\
             {{ commit.message | upper_first }}\
-            {% if commit.github.username %} by @{{ commit.github.username }}{%- endif %}\
-            {% if commit.github.pr_number %} in [#{{ commit.github.pr_number }}](https://github.com/your-username/laravel-hmac-auth/pull/{{ commit.github.pr_number }}){%- endif %}\
+            {% if commit.remote.username %} by @{{ commit.remote.username }}{%- endif %}\
+            {% if commit.remote.pr_number %} in [#{{ commit.remote.pr_number }}](https://github.com/rickeysxhemz/hmacAuth/pull/{{ commit.remote.pr_number }}){%- endif %}
     {% endfor %}
-{% endfor %}\n
+{% endfor %}
 """
+
+# Footer template rendered at the end of the changelog
 footer = """
 {% for release in releases -%}
     {% if release.version -%}
         {% if release.previous.version -%}
-            [{{ release.version | trim_start_matches(pat="v") }}]: https://github.com/your-username/laravel-hmac-auth/compare/{{ release.previous.version }}...{{ release.version }}
+            [{{ release.version | trim_start_matches(pat="v") }}]: https://github.com/rickeysxhemz/hmacAuth/compare/{{ release.previous.version }}...{{ release.version }}
         {% endif -%}
     {% else -%}
-        [Unreleased]: https://github.com/your-username/laravel-hmac-auth/compare/{{ release.previous.version }}...HEAD
+        [Unreleased]: https://github.com/rickeysxhemz/hmacAuth/compare/{{ release.previous.version }}...HEAD
     {% endif -%}
 {% endfor %}
 """
+
+# Remove leading and trailing whitespace from body
 trim = true
 
+# Render changelog even if no releases
+render_always = false
+
+# Post-processors for changelog content
+postprocessors = []
+
 [git]
+# Parse commits according to Conventional Commits specification
 conventional_commits = true
+
+# Filter out non-conventional commits
 filter_unconventional = true
+
+# Do not require all commits to be conventional
+require_conventional = false
+
+# Do not split commits by newlines
 split_commits = false
+
+# Pre-process commit messages (convert issue references to links)
 commit_preprocessors = [
-    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/your-username/laravel-hmac-auth/issues/${2}))" },
+    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/rickeysxhemz/hmacAuth/issues/${2}))" },
 ]
+
+# Classify commits into groups
 commit_parsers = [
-    { message = "^feat", group = "Features" },
-    { message = "^fix", group = "Bug Fixes" },
-    { message = "^doc", group = "Documentation" },
-    { message = "^perf", group = "Performance" },
-    { message = "^refactor", group = "Refactoring" },
-    { message = "^style", group = "Styling" },
-    { message = "^test", group = "Testing" },
+    { message = "^feat", group = "<!-- 0 -->Features" },
+    { message = "^fix", group = "<!-- 1 -->Bug Fixes" },
+    { message = "^doc", group = "<!-- 2 -->Documentation" },
+    { message = "^perf", group = "<!-- 3 -->Performance" },
+    { message = "^refactor", group = "<!-- 4 -->Refactoring" },
+    { message = "^style", group = "<!-- 5 -->Styling" },
+    { message = "^test", group = "<!-- 6 -->Testing" },
     { message = "^chore\\(release\\)", skip = true },
-    { message = "^chore\\(deps\\)", group = "Dependencies" },
-    { message = "^chore", group = "Miscellaneous" },
-    { message = "^ci", group = "CI/CD" },
-    { body = ".*security", group = "Security" },
+    { message = "^chore\\(deps\\)", group = "<!-- 7 -->Dependencies" },
+    { message = "^chore", group = "<!-- 8 -->Miscellaneous" },
+    { message = "^ci", group = "<!-- 9 -->CI/CD" },
+    { body = ".*security", group = "<!-- 10 -->Security" },
 ]
+
+# Protect breaking commits from being skipped
 protect_breaking_commits = false
+
+# Do not filter commits not matched by parsers
 filter_commits = false
+
+# Do not fail on unmatched commits
+fail_on_unmatched_commit = false
+
+# Tag pattern for version matching
+tag_pattern = "v[0-9].*"
+
+# Do not process tags topologically
 topo_order = false
+
+# Process commits topologically
+topo_order_commits = true
+
+# Sort commits chronologically (oldest first)
 sort_commits = "oldest"
+
+[remote.github]
+owner = "rickeysxhemz"
+repo = "hmacAuth"
