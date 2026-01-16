@@ -1,25 +1,70 @@
 # CODEOWNERS - Define code ownership for automatic review requests
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Default owners for everything in the repo
-* @your-username
+# =============================================================================
+# DEFAULT OWNER
+# =============================================================================
+* @rickeysxhemz
 
-# Security-critical files require explicit review
-src/Services/HmacVerificationService.php @your-username
-src/Services/SignatureService.php @your-username
-src/Services/SecureKeyGenerator.php @your-username
-src/Middleware/HmacAuthMiddleware.php @your-username
-SECURITY.md @your-username
+# =============================================================================
+# 🔴 CRITICAL - Authentication & Cryptography
+# These files handle core security. A vulnerability here = full auth bypass.
+# =============================================================================
+src/Services/HmacVerificationService.php @rickeysxhemz
+src/Services/SignatureService.php @rickeysxhemz
+src/Services/SecureKeyGenerator.php @rickeysxhemz
+src/Http/Middleware/VerifyHmacSignature.php @rickeysxhemz
+src/Services/NonceStore.php @rickeysxhemz
+src/Concerns/ValidatesHmacHeaders.php @rickeysxhemz
+src/Enums/HmacAlgorithm.php @rickeysxhemz
 
-# Configuration changes
-config/ @your-username
+# =============================================================================
+# 🟠 HIGH - Credential & Secret Management
+# These files handle API secrets. Leakage = compromised clients.
+# =============================================================================
+src/Models/ApiCredential.php @rickeysxhemz
+src/Services/ApiCredentialService.php @rickeysxhemz
+src/Repositories/ApiCredentialRepository.php @rickeysxhemz
+src/Console/Commands/GenerateCredentialsCommand.php @rickeysxhemz
+src/Console/Commands/RotateSecretCommand.php @rickeysxhemz
+database/migrations/ @rickeysxhemz
 
-# Database migrations
-database/migrations/ @your-username
+# =============================================================================
+# 🟡 MEDIUM - Rate Limiting & Abuse Prevention
+# These files prevent brute force and track suspicious activity.
+# =============================================================================
+src/Services/RateLimiterService.php @rickeysxhemz
+src/Services/RequestLogger.php @rickeysxhemz
+src/Repositories/ApiRequestLogRepository.php @rickeysxhemz
 
-# CI/CD workflows
-.github/workflows/ @your-username
+# =============================================================================
+# 🟡 MEDIUM - Configuration & Authorization
+# Misconfigurations can weaken security posture.
+# =============================================================================
+src/DTOs/HmacConfig.php @rickeysxhemz
+src/Policies/ApiCredentialPolicy.php @rickeysxhemz
+src/Factories/HmacConfigFactory.php @rickeysxhemz
+config/ @rickeysxhemz
 
-# Documentation
-docs/ @your-username
-*.md @your-username
+# =============================================================================
+# 🟡 MEDIUM - Multi-tenancy (Data Isolation)
+# Bugs here can leak data between tenants.
+# =============================================================================
+src/Tenancy/ @rickeysxhemz
+src/Concerns/HasTenantScoping.php @rickeysxhemz
+src/Config/TenancyConfig.php @rickeysxhemz
+
+# =============================================================================
+# 📄 Security Documentation
+# Changes to security docs should be reviewed carefully.
+# =============================================================================
+SECURITY.md @rickeysxhemz
+docs/security.md @rickeysxhemz
+
+# =============================================================================
+# ⚙️ CI/CD & Infrastructure
+# Workflow changes can introduce supply chain risks.
+# =============================================================================
+.github/workflows/ @rickeysxhemz
+.github/CODEOWNERS @rickeysxhemz
+composer.json @rickeysxhemz

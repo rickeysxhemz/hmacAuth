@@ -12,6 +12,7 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -47,7 +48,7 @@ jobs:
             ## Installation
 
             ```bash
-            composer require your-vendor/laravel-hmac-auth:${{ steps.tag.outputs.tag }}
+            composer require hmacauth/laravel-hmac-auth:${{ steps.tag.outputs.tag }}
             ```
 
             ## Full Changelog
