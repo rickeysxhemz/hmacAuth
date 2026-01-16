@@ -1,5 +1,10 @@
 # Laravel HMAC Authentication
 
+[![Tests](https://github.com/rickeysxhemz/hmacAuth/actions/workflows/tests.yml/badge.svg)](https://github.com/rickeysxhemz/hmacAuth/actions/workflows/tests.yml)
+[![Packagist Version](https://img.shields.io/packagist/v/hmacauth/laravel-hmac-auth)](https://packagist.org/packages/hmacauth/laravel-hmac-auth)
+[![Downloads](https://img.shields.io/packagist/dt/hmacauth/laravel-hmac-auth)](https://packagist.org/packages/hmacauth/laravel-hmac-auth)
+[![License](https://img.shields.io/packagist/l/hmacauth/laravel-hmac-auth)](LICENSE)
+
 HMAC-based API authentication for Laravel 11/12.
 
 ## Install
