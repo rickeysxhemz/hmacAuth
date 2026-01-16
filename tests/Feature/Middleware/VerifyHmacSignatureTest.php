@@ -28,14 +28,14 @@ function createMiddlewareConfig(array $overrides = []): HmacConfig
         algorithm: 'sha256',
         clientIdLength: 16,
         secretLength: 48,
-        redisPrefix: 'hmac:',
+        cacheStore: null,
+        cachePrefix: 'hmac:nonce:',
         nonceTtl: 600,
         maxBodySize: 1048576,
         minNonceLength: 32,
         tenancyEnabled: $overrides['tenancyEnabled'] ?? false,
         tenancyColumn: $overrides['tenancyColumn'] ?? 'tenant_id',
         tenancyModel: 'App\\Models\\Tenant',
-        databaseRedisPrefix: '',
     );
 }
 
