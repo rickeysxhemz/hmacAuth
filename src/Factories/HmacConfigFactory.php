@@ -34,15 +34,14 @@ final readonly class HmacConfigFactory implements HmacConfigFactoryInterface
             algorithm: $this->string('hmac.algorithm', 'sha256'),
             clientIdLength: $this->int('hmac.client_id_length', 16),
             secretLength: $this->int('hmac.secret_length', 48),
-            redisPrefix: $this->string('hmac.redis.prefix', 'hmac:'),
+            cacheStore: $this->nullableString('hmac.cache.store'),
+            cachePrefix: $this->string('hmac.cache.prefix', 'hmac:nonce:'),
             nonceTtl: $this->int('hmac.nonce_ttl', 600),
             maxBodySize: $this->int('hmac.max_body_size', 1048576),
             minNonceLength: $this->int('hmac.min_nonce_length', 32),
             tenancyEnabled: $this->bool('hmac.tenancy.enabled', false),
             tenancyColumn: $this->string('hmac.tenancy.column', 'tenant_id'),
             tenancyModel: $this->string('hmac.tenancy.model', 'App\\Models\\Tenant'),
-            databaseRedisPrefix: $this->string('database.redis.options.prefix', ''),
-            failOnRedisError: $this->bool('hmac.redis.fail_on_error', false),
             negativeCacheTtl: $this->int('hmac.negative_cache_ttl', 60),
             ipBlockingEnabled: $this->bool('hmac.ip_blocking.enabled', true),
             ipBlockingThreshold: $this->int('hmac.ip_blocking.threshold', 10),
@@ -55,6 +54,13 @@ final readonly class HmacConfigFactory implements HmacConfigFactoryInterface
         $value = $this->config->get($key, $default);
 
         return is_string($value) ? $value : $default;
+    }
+
+    private function nullableString(string $key): ?string
+    {
+        $value = $this->config->get($key);
+
+        return is_string($value) ? $value : null;
     }
 
     private function int(string $key, int $default): int

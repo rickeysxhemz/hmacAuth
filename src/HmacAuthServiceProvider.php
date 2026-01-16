@@ -41,8 +41,8 @@ use HmacAuth\Tenancy\NullTenancyStrategy;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
 
 final class HmacAuthServiceProvider extends ServiceProvider
@@ -114,17 +114,11 @@ final class HmacAuthServiceProvider extends ServiceProvider
         $this->app->scoped(NonceStoreInterface::class, function (Application $app): NonceStore {
             $config = $app->make(HmacConfig::class);
 
-            // Disable Redis in testing unless explicitly enabled via config
-            $useRedis = ! $app->environment('testing') || config('hmac.testing.use_redis', false);
+            $store = $config->cacheStore !== null
+                ? Cache::store($config->cacheStore)
+                : Cache::store();
 
-            if (! $useRedis) {
-                return new NonceStore(null, $config);
-            }
-
-            return new NonceStore(
-                Redis::connection(config('hmac.redis.connection', 'default')),
-                $config
-            );
+            return new NonceStore($store, $config);
         });
 
         $this->app->scoped(ApiCredentialRepositoryInterface::class, ApiCredentialRepository::class);

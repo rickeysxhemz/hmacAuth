@@ -26,15 +26,14 @@ final readonly class HmacConfig
         public string $algorithm,
         public int $clientIdLength,
         public int $secretLength,
-        public string $redisPrefix,
+        public ?string $cacheStore,
+        public string $cachePrefix,
         public int $nonceTtl,
         public int $maxBodySize,
         public int $minNonceLength,
         public bool $tenancyEnabled = false,
         public string $tenancyColumn = 'tenant_id',
         public string $tenancyModel = 'App\\Models\\Tenant',
-        public string $databaseRedisPrefix = '',
-        public bool $failOnRedisError = false,
         public int $negativeCacheTtl = 60,
         public bool $ipBlockingEnabled = true,
         public int $ipBlockingThreshold = 10,
@@ -68,15 +67,14 @@ final readonly class HmacConfig
             algorithm: self::string('hmac.algorithm', 'sha256'),
             clientIdLength: self::int('hmac.client_id_length', 16),
             secretLength: self::int('hmac.secret_length', 48),
-            redisPrefix: self::string('hmac.redis.prefix', 'hmac:'),
+            cacheStore: self::nullableString('hmac.cache.store'),
+            cachePrefix: self::string('hmac.cache.prefix', 'hmac:nonce:'),
             nonceTtl: self::int('hmac.nonce_ttl', 600),
             maxBodySize: self::int('hmac.max_body_size', 1048576),
             minNonceLength: self::int('hmac.min_nonce_length', 32),
             tenancyEnabled: self::bool('hmac.tenancy.enabled', false),
             tenancyColumn: self::string('hmac.tenancy.column', 'tenant_id'),
             tenancyModel: self::string('hmac.tenancy.model', 'App\\Models\\Tenant'),
-            databaseRedisPrefix: self::string('database.redis.options.prefix', ''),
-            failOnRedisError: self::bool('hmac.redis.fail_on_error', false),
             negativeCacheTtl: self::int('hmac.negative_cache_ttl', 60),
             ipBlockingEnabled: self::bool('hmac.ip_blocking.enabled', true),
             ipBlockingThreshold: self::int('hmac.ip_blocking.threshold', 10),
@@ -89,6 +87,13 @@ final readonly class HmacConfig
         $value = config($key, $default);
 
         return is_string($value) ? $value : $default;
+    }
+
+    private static function nullableString(string $key): ?string
+    {
+        $value = config($key);
+
+        return is_string($value) ? $value : null;
     }
 
     private static function int(string $key, int $default): int

@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use HmacAuth\Contracts\NonceStoreInterface;
 use HmacAuth\DTOs\SignaturePayload;
 use HmacAuth\Models\ApiCredential;
+use HmacAuth\Services\NonceStore;
 use HmacAuth\Services\SignatureService;
 use Illuminate\Support\Facades\Route;
 
@@ -361,6 +363,20 @@ describe('Standalone HMAC Authentication', function () {
         });
 
         it('rejects replay attacks with reused nonce', function () {
+            // Mock the NonceStore to simulate persistence across requests
+            $storedNonces = [];
+            $mockNonceStore = Mockery::mock(NonceStoreInterface::class);
+            $mockNonceStore->shouldReceive('exists')
+                ->andReturnUsing(function ($nonce) use (&$storedNonces) {
+                    return isset($storedNonces[$nonce]);
+                });
+            $mockNonceStore->shouldReceive('store')
+                ->andReturnUsing(function ($nonce) use (&$storedNonces) {
+                    $storedNonces[$nonce] = true;
+                });
+
+            $this->app->instance(NonceStoreInterface::class, $mockNonceStore);
+
             $clientId = 'test_'.bin2hex(random_bytes(16));
             $clientSecret = generateTestSecret();
 

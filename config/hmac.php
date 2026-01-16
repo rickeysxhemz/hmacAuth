@@ -86,14 +86,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Redis Configuration
+    | Cache Configuration
     |--------------------------------------------------------------------------
+    |
+    | Configure the cache store used for nonce storage.
+    | Set 'store' to null to use Laravel's default cache store.
+    |
     */
 
-    'redis' => [
-        'connection' => env('HMAC_REDIS_CONNECTION', 'default'),
-        'prefix' => env('HMAC_REDIS_PREFIX', 'hmac:'),
-        'fail_on_error' => env('HMAC_REDIS_STRICT', false),
+    'cache' => [
+        'store' => env('HMAC_CACHE_STORE', null),
+        'prefix' => env('HMAC_CACHE_PREFIX', 'hmac:nonce:'),
     ],
 
     /*
