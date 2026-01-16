@@ -17,15 +17,15 @@ Publishes config, runs migrations, optionally generates first credentials.
 Generate new credentials.
 
 ```bash
-php artisan hmac:generate --company=1 [--environment=production] [--expires=2025-12-31]
+php artisan hmac:generate [--tenant=1] [--environment=testing] [--expires=30] [--user=1]
 ```
 
-| Option | Default |
-|--------|---------|
-| `--company` | Required |
-| `--created-by` | `1` |
-| `--environment` | `testing` |
-| `--expires` | Never |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--tenant` | Tenant ID (required only when tenancy enabled) | - |
+| `--environment` | `production` or `testing` | `testing` |
+| `--expires` | Days until expiration | Never |
+| `--user` | User ID who creates credential | `1` |
 
 ---
 
@@ -63,5 +63,5 @@ Schedule::command('hmac:cleanup --days=30')->daily()->at('03:00');
 ## Programmatic Use
 
 ```php
-Artisan::call('hmac:generate', ['--company' => 1, '--environment' => 'production']);
+Artisan::call('hmac:generate', ['--environment' => 'production', '--user' => 1]);
 ```

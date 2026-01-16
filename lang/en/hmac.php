@@ -48,7 +48,7 @@ return [
             'generating' => 'Generating API credentials...',
             'success' => 'API credentials generated successfully!',
             'secret_warning' => 'IMPORTANT: Store the Client Secret securely. It cannot be retrieved later.',
-            'invalid_company' => 'Company ID must be a number',
+            'invalid_tenant' => 'Tenant ID must be a number',
             'invalid_environment' => 'Environment must be "production" or "testing"',
         ],
         'rotate' => [
