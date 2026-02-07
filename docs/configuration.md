@@ -2,8 +2,15 @@
 
 Reference for `config/hmac.php`.
 
+## Publishing Assets
+
 ```bash
+# Publish all assets (config and migrations)
+php artisan vendor:publish --tag=hmac
+
+# Or publish individually
 php artisan vendor:publish --tag=hmac-config
+php artisan vendor:publish --tag=hmac-migrations
 ```
 
 ## Options

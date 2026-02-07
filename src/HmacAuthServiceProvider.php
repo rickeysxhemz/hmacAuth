@@ -65,8 +65,6 @@ final class HmacAuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->loadTranslationsFrom(__DIR__.'/../lang', 'hmac');
-
         $this->registerMiddleware();
         $this->registerPolicies();
 
@@ -156,15 +154,11 @@ final class HmacAuthServiceProvider extends ServiceProvider
     {
         $this->publishes([
             __DIR__.'/../config/hmac.php' => config_path('hmac.php'),
-        ], 'hmac-config');
+        ], ['hmac', 'hmac-config']);
 
         $this->publishesMigrations([
             __DIR__.'/../database/migrations' => database_path('migrations'),
-        ], 'hmac-migrations');
-
-        $this->publishes([
-            __DIR__.'/../lang' => $this->app->langPath('vendor/hmac'),
-        ], 'hmac-lang');
+        ], ['hmac', 'hmac-migrations']);
     }
 
     private function registerCommands(): void
